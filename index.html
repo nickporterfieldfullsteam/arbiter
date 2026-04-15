@@ -2880,7 +2880,7 @@ function submitForm() {
     const el = document.getElementById('df-' + f.id);
     if (!el || !el.value.trim()) { alert('Please fill in: ' + f.label); el && el.focus(); return; }
     if (f.id === '__email__') {
-      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emailRe = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
       if (!emailRe.test(el.value.trim())) { alert('Please enter a valid email address for Submitter email.'); el.focus(); return; }
     }
   }
