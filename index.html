@@ -110,7 +110,7 @@
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
   .modal { background: #fff; border-radius: 12px; padding: 1.5rem; width: 100%; max-width: 460px; margin: 1rem; }
   .status-badge { display:inline-block; font-size:11px; font-weight:500; padding:2px 8px; border-radius:6px; }
-  .status-filter-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:1rem; }
+  .status-filter-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:0.5rem; }
   .status-filter-btn { font-family:inherit; font-size:12px; font-weight:400; padding:5px 12px; border-radius:8px; border:1px solid #ddd; background:transparent; color:#666; cursor:pointer; }
   .status-filter-btn.active { background:#1a1a1a; color:#fff; border-color:#1a1a1a; }
   .proj-detail-panel { display:none; padding:12px 14px; border-top:1px solid #f0f0ee; background:#fafaf9; }
@@ -174,6 +174,21 @@
   .donut-legend { flex:1; display:flex; flex-direction:column; gap:4px; }
   .legend-row { display:flex; align-items:center; gap:6px; font-size:11px; color:#555; }
   .legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+  /* ── LIST FILTERS ── */
+  #list-filter-bar select { cursor:pointer; }
+  #list-filter-bar select:focus { outline:none; border-color:#888; }
+
+  /* ── SUBMITTERS ── */
+  .submitter-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+  .submitter-card { background:#fff; border:1px solid #e5e5e5; border-radius:10px; padding:14px 16px; cursor:pointer; transition:box-shadow 0.15s,border-color 0.15s; }
+  .submitter-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.08); border-color:#ccc; }
+  .submitter-avatar { width:36px; height:36px; border-radius:50%; background:#E6F1FB; color:#185FA5; font-size:13px; font-weight:500; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .submitter-stat { text-align:center; }
+  .submitter-stat-value { font-size:18px; font-weight:500; color:#1a1a1a; line-height:1.1; }
+  .submitter-stat-label { font-size:11px; color:#888; margin-top:2px; }
+  .submitter-bar { display:flex; height:4px; border-radius:2px; overflow:hidden; gap:1px; margin-top:8px; }
+  .submitter-sort-bar { display:flex; align-items:center; gap:8px; margin-bottom:1rem; }
 
   /* ── KANBAN ── */
   .view-toggle { display:flex; gap:0; margin-bottom:1rem; border:1px solid #e5e5e5; border-radius:8px; overflow:hidden; width:fit-content; }
@@ -239,6 +254,7 @@
   <div class="tabs">
     <button class="tab active" onclick="showTab('intake')">New request</button>
     <button class="tab" onclick="showTab('tracker')">All projects</button>
+    <button class="tab" onclick="showTab('submitters')">Submitters</button>
     <button class="tab" onclick="showTab('weights')">Scoring weights</button>
     <button class="tab" onclick="showTab('editor')">Edit criteria</button>
     <button class="tab" onclick="showTab('help')">Help</button>
@@ -313,6 +329,13 @@
       </div>
       <div id="list-view">
         <div class="status-filter-bar" id="status-filter-bar"></div>
+        <div id="list-filter-bar" style="display:flex;align-items:center;gap:6px;margin-bottom:1rem;">
+          <select id="filter-type" style="font-size:12px;padding:3px 7px;border:1px solid #e5e5e5;border-radius:6px;background:#fff;color:#888;" onchange="applyListFilters()"><option value="">All types</option></select>
+          <select id="filter-tier" style="font-size:12px;padding:3px 7px;border:1px solid #e5e5e5;border-radius:6px;background:#fff;color:#888;" onchange="applyListFilters()"><option value="">All tiers</option><option value="Pursue">Pursue</option><option value="Evaluate">Evaluate</option><option value="Defer">Defer</option><option value="Pass">Pass</option></select>
+          <select id="filter-date" style="font-size:12px;padding:3px 7px;border:1px solid #e5e5e5;border-radius:6px;background:#fff;color:#888;" onchange="applyListFilters()"><option value="">Any date</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="quarter">This quarter</option></select>
+          <select id="filter-rep" style="font-size:12px;padding:3px 7px;border:1px solid #e5e5e5;border-radius:6px;background:#fff;color:#888;" onchange="applyListFilters()"><option value="">All reps</option></select>
+          <button style="font-family:inherit;font-size:11px;padding:2px 7px;border:1px solid #e5e5e5;border-radius:6px;background:#fff;color:#aaa;cursor:pointer;" onclick="clearListFilters()">&#x2715;</button>
+        </div>
         <div id="projects-list"></div>
       </div>
       <div id="board-view" style="display:none;">
@@ -329,6 +352,11 @@
       <button class="btn-secondary" onclick="exportCSV()">Export as CSV</button>
       <button class="btn-secondary" onclick="showImportModal()">Import submission</button>
     </div>
+  </div>
+
+  <!-- SUBMITTERS -->
+  <div id="tab-submitters" class="tab-panel">
+    <div id="submitters-content"></div>
   </div>
 
   <!-- WEIGHTS -->
@@ -464,13 +492,7 @@
       <div class="btn-row" style="margin-bottom:10px;">
         <button class="btn-primary" onclick="generateRepLink()">Generate link</button>
       </div>
-      <div id="rep-link-output" style="display:none;">
-        <div style="background:#f5f5f3;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
-          <input type="text" id="rep-link-url" readonly style="flex:1;background:transparent;border:none;font-size:12px;font-family:monospace;color:#1a1a1a;outline:none;cursor:text;">
-          <button class="btn-secondary" style="font-size:12px;padding:4px 12px;flex-shrink:0;" onclick="copyRepLink()">Copy</button>
-        </div>
-        <p style="font-size:12px;color:#888;margin-top:6px;">Send this link to the rep. Their name and email will be locked on the form.</p>
-      </div>
+      <div id="rep-links-list"></div>
     </div>
 
     <div class="section">
@@ -501,6 +523,7 @@
       <div style="border-top:1px solid #f0f0ee;margin-top:1.25rem;padding-top:1.25rem;">
         <p style="font-size:13px;color:#888;margin-bottom:0.75rem;">Generate a set of realistic sample projects for testing the tracker, board, and metrics.</p>
         <button class="btn-secondary" onclick="generateSampleProjects()">Generate sample projects</button>
+        <button class="btn-danger-inline" style="padding:6px 14px;border:1px solid #FCEBEB;border-radius:8px;margin-left:8px;" onclick="clearSampleProjects()">Clear sample projects</button>
       </div>
     </div>
 
@@ -555,12 +578,12 @@
             <span class="help-topic-chevron">▾</span>
           </div>
           <div class="help-topic-body">
-            <p style="margin:0 0 8px;">A running list of every scored request, filterable by status. Click any row to expand it.</p>            <ul style="margin:0 0 0 1.1rem;padding:0;">
-            <li style="margin-bottom:4px;">View full submission details and per-criterion scores with weight percentages</li>
-            <li style="margin-bottom:4px;">Update status, set a revisit date, and add decision notes</li>
-            <li style="margin-bottom:4px;">Send a decision email directly from the panel — includes a live preview</li>
-            <li style="margin-bottom:4px;">Use <strong>Edit &amp; re-score</strong> to pre-fill the intake form and update the project in place</li>
-            <li style="margin-bottom:4px;">A banner flags deferred projects that are overdue or due within 7 days</li>
+            <p style="margin:0 0 8px;">A running list of every scored request. Filterable by status, project type, tier, date range, and rep.</p>            <ul style="margin:0 0 0 1.1rem;padding:0;">
+            <li style="margin-bottom:4px;">Click any row to expand it — view full submission details, per-criterion scores, and decision controls</li>
+            <li style="margin-bottom:4px;">Update status, set a revisit date, and add decision notes — all save instantly</li>
+            <li style="margin-bottom:4px;">Send a decision email directly from the panel with a live preview</li>
+            <li style="margin-bottom:4px;">Use <strong>Edit &amp; re-score</strong> to pre-fill the intake form and update the project in place — a score trend indicator (↑↓) shows if the score improved or declined</li>
+            <li style="margin-bottom:4px;">Switch to <strong>Board view</strong> for a kanban layout with drag-and-drop status changes</li>
             <li style="margin-bottom:4px;">Export as CSV or import a submission using the import code from an email</li>
             </ul>
           </div>
@@ -573,9 +596,9 @@
           </div>
           <div class="help-topic-body">
             <p style="margin:0 0 8px;">Every project moves through: <strong>Submitted → Under Review → Accepted / Deferred / Passed</strong>.</p>            <ul style="margin:0 0 0 1.1rem;padding:0;">
-            <li style="margin-bottom:4px;">Change status from the expanded row — the badge updates instantly and a toast confirms</li>
-            <li style="margin-bottom:4px;">For deferred projects, set a revisit date; a reminder banner appears when it's due or within 7 days</li>
-            <li style="margin-bottom:4px;">Click <strong>Send decision email</strong> to open a modal with a live preview — adjust notes and date before sending</li>
+            <li style="margin-bottom:4px;">Change status from the expanded row or by dragging cards on the board — updates instantly</li>
+            <li style="margin-bottom:4px;">For deferred projects, set a revisit date; the Summary metrics card turns red/amber when overdue or due within 7 days — click it to jump straight to those projects</li>
+            <li style="margin-bottom:4px;">Click <strong>Send decision email</strong> to open a modal with a live preview — adjust decision, notes, and revisit date before sending</li>
             <li style="margin-bottom:4px;">Use <strong>Edit &amp; re-score</strong> to update an existing project without losing its status or decision history</li>
             </ul>
           </div>
@@ -622,10 +645,41 @@
             <li style="margin-bottom:4px;">The export modal confirms your email address and CC — all EmailJS credentials come from Settings automatically</li>
             <li style="margin-bottom:4px;">Reps must select a project type; only the relevant criteria for that type are shown</li>
             <li style="margin-bottom:4px;">Scoring, weights, and tier logic are completely hidden from reps</li>
-            <li style="margin-bottom:4px;">Three email notifications are available — all use pre-built HTML, no writing required:</li>
-            <li style="margin-bottom:4px;"><strong>Intake notification</strong> — sent to the PM automatically when a rep submits</li>
-            <li style="margin-bottom:4px;"><strong>Submission auto-reply</strong> — sent to the rep immediately confirming receipt (optional)</li>
-            <li style="margin-bottom:4px;"><strong>Decision notification</strong> — sent manually from All Projects when a decision is ready</li>
+            <li style="margin-bottom:4px;">Generate personalized rep links from <strong>Settings → Rep links</strong> — the rep's name and email pre-fill and lock automatically when they open their link</li>
+            <li style="margin-bottom:4px;">Three email notifications are available — all use pre-built HTML, no writing required: <strong>Intake notification</strong> (to PM), <strong>Submission auto-reply</strong> (to rep, optional), and <strong>Decision notification</strong> (manual from All Projects)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="help-topic">
+          <div class="help-topic-header" onclick="toggleHelp(this)">
+            <span class="help-topic-title">Dashboard &amp; board view</span>
+            <span class="help-topic-chevron">▾</span>
+          </div>
+          <div class="help-topic-body">
+            <p style="margin:0 0 8px;">The All Projects tab has two views — List and Board — plus a summary metrics panel at the top.</p>            <ul style="margin:0 0 0 1.1rem;padding:0;">
+            <li style="margin-bottom:4px;">The <strong>Summary metrics</strong> panel shows total projects, submissions this month, average score, acceptance rate, and overdue revisits — click any card to filter the list</li>
+            <li style="margin-bottom:4px;">Switch to <strong>Board view</strong> for a five-column kanban layout — drag cards between columns to update status instantly</li>
+            <li style="margin-bottom:4px;">Terminal columns (Accepted, Deferred, Passed) collapse by default to keep focus on active work — click the column header to expand or collapse</li>
+            <li style="margin-bottom:4px;">Sort board cards by score or date using the toolbar above the board</li>
+            <li style="margin-bottom:4px;">Filter board cards by project type using the type buttons in the toolbar</li>
+            <li style="margin-bottom:4px;">Overdue deferred projects are highlighted with a red left border accent in both list and board views</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="help-topic">
+          <div class="help-topic-header" onclick="toggleHelp(this)">
+            <span class="help-topic-title">Submitters tab</span>
+            <span class="help-topic-chevron">▾</span>
+          </div>
+          <div class="help-topic-body">
+            <p style="margin:0 0 8px;">The Submitters tab aggregates all submissions by rep, giving you a quick read on who's submitting what.</p>            <ul style="margin:0 0 0 1.1rem;padding:0;">
+            <li style="margin-bottom:4px;">Each rep card shows their total submissions, average score, acceptance rate, and last submission date</li>
+            <li style="margin-bottom:4px;">A color-coded status bar shows the breakdown of their submissions across all five statuses</li>
+            <li style="margin-bottom:4px;">Sort cards by submission count, average score, or acceptance rate</li>
+            <li style="margin-bottom:4px;">Click any rep card to jump to All Projects filtered to just their submissions</li>
+            <li style="margin-bottom:4px;">Generate personalized intake form links per rep from <strong>Settings → Rep links</strong> — their name and email pre-fill and lock on the form so attribution is always accurate</li>
             </ul>
           </div>
         </div>
@@ -638,6 +692,8 @@
           <div class="help-topic-body">
             <p style="margin:0 0 8px;">All data lives in your browser's local storage. The <strong>Settings tab</strong> is the central place for everything administrative.</p>            <ul style="margin:0 0 0 1.1rem;padding:0;">
             <li style="margin-bottom:4px;">Configure all three EmailJS template IDs and email addresses in one place</li>
+            <li style="margin-bottom:4px;">Generate and manage personalized rep links under <strong>Rep links</strong></li>
+            <li style="margin-bottom:4px;">Use <strong>Generate sample projects</strong> to seed the tracker with test data — <strong>Clear sample projects</strong> removes only the generated ones</li>
             <li style="margin-bottom:4px;">Export or import a full settings backup (criteria, weights, presets, thresholds, help content)</li>
             <li style="margin-bottom:4px;">Separately export or restore a JSON backup of saved projects</li>
             <li style="margin-bottom:4px;"><strong>Save as defaults</strong> sets a local restore point — <strong>Reset to defaults</strong> returns to your saved configuration, not the original built-ins</li>
@@ -650,7 +706,7 @@
         <div class="help-topic">
           <div class="help-topic-header" onclick="toggleHelp(this)">
             <span class="help-topic-title">QA checklist</span>
-            <span style="font-size:12px;color:#888;margin-right:8px;" id="qa-progress-label">0 / 88 complete</span>
+            <span style="font-size:12px;color:#888;margin-right:8px;" id="qa-progress-label">0 / 117 complete</span>
             <span class="help-topic-chevron">&#9662;</span>
           </div>
           <div class="help-topic-body">
@@ -705,6 +761,18 @@
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-0-10" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
                 Clear all projects prompts confirmation and empties tracker
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-0-11" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Rep links — generate link pre-fills and locks name/email on the sales form
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-0-12" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Generate sample projects adds 10 realistic entries across all statuses
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-0-13" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Clear sample projects removes only sample-tagged projects
               </label>
             </div>
             <div style="margin-bottom:1rem;">
@@ -815,6 +883,42 @@
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-2-13" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
                 Duplicate import code triggers confirmation prompt
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-2-14" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Summary metrics panel shows correct totals, avg score, acceptance rate, and overdue count
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-2-15" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Clicking a metric card filters the list correctly
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-2-16" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Overdue revisits card turns red/amber and clicking it filters to Deferred projects
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-2-17" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                List filters — type, tier, date, and rep all filter correctly
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-2-18" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                List filters combine correctly when multiple are active
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-2-19" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Clear filters (✕) resets all dropdowns and restores the full list
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-2-20" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Edit & re-score pre-fills project type, all criteria, and detail fields correctly
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-2-21" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Re-scored project shows ↑ or ↓ score trend indicator in list and board views
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-2-22" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Delete project shows inline confirm, then removes on second click
               </label>
             </div>
             <div style="margin-bottom:1rem;">
@@ -961,6 +1065,80 @@
                 <input type="checkbox" id="qa-5-11" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
                 Clear form resets all fields
               </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-5-12" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Opening a rep link pre-fills and locks Submitted by and Submitter email fields
+              </label>
+            </div>
+            <div style="margin-bottom:1rem;">
+              <p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">Dashboard &amp; board view</p>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-9-0" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                List/Board toggle switches views correctly
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-9-1" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Board shows 5 columns with correct project counts
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-9-2" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Dragging a card to a new column updates status instantly
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-9-3" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Dragging over a collapsed column expands it temporarily
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-9-4" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Collapsed columns show title and count vertically
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-9-5" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Click column header toggles collapse — preference persists on refresh
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-9-6" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Sort by score and sort by date both work correctly
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-9-7" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Project type filter buttons appear and filter all columns
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-9-8" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Overdue deferred cards show red left border in board view
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-9-9" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Kanban card modal shows submission details and scoring criteria
+              </label>
+            </div>
+            <div style="margin-bottom:1rem;">
+              <p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">Submitters tab</p>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-10-0" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Submitters tab shows a card for each unique rep
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-10-1" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Card shows correct submission count, avg score, and acceptance rate
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-10-2" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Status bar on card reflects correct breakdown
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-10-3" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Sort by count, score, and acceptance rate all work
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-10-4" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Clicking a rep card switches to All Projects filtered to that rep
+              </label>
+              <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
+                <input type="checkbox" id="qa-10-5" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
+                Toast confirms filter and explains how to reset
+              </label>
             </div>
             <div style="margin-bottom:1rem;">
               <p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">Help tab</p>
@@ -1001,7 +1179,7 @@
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-7-3" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
-                Version badge v1.5.0 visible next to title
+                Version badge v1.7.0 visible next to title
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-7-4" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
@@ -1081,7 +1259,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const VERSION = '1.6.0';
+const VERSION = '1.7.0';
 
 function uid() { return 'c' + Math.random().toString(36).slice(2,9); }
 
@@ -2042,6 +2220,177 @@ function renderSummaryMetrics() {
   container.innerHTML = statsHtml + `<div class="charts-row">${pipelineChart}${scoreChart}${timeChart}</div>`;
 }
 
+
+/* ── SUBMITTERS ── */
+let submitterSort = 'count';
+
+function renderSubmitters() {
+  const container = document.getElementById('submitters-content');
+  if (!container) return;
+
+  if (!projects.length) {
+    container.innerHTML = '<div class="empty-state">No projects yet. Submissions will appear here once reps start submitting.</div>';
+    return;
+  }
+
+  // Aggregate by submitter email
+  const map = {};
+  projects.forEach(p => {
+    const email = (p.lockedVals && p.lockedVals['__email__']) || '';
+    const name  = (p.lockedVals && p.lockedVals['__submitter__']) || 'Unknown';
+    if (!email && name === 'Unknown') return;
+    const key = email || name;
+    if (!map[key]) map[key] = { name, email, projects: [] };
+    map[key].projects.push(p);
+  });
+
+  let reps = Object.values(map).map(r => {
+    const total = r.projects.length;
+    const decided = r.projects.filter(p => ['Accepted','Deferred','Passed'].includes(p.status));
+    const accepted = r.projects.filter(p => p.status === 'Accepted').length;
+    const avgScore = Math.round(r.projects.reduce((s,p) => s+(p.score||0), 0) / total);
+    const acceptRate = decided.length ? Math.round((accepted/decided.length)*100) : null;
+    const dates = r.projects.map(p => new Date(p.date)).filter(d => !isNaN(d));
+    const lastDate = dates.length ? new Date(Math.max(...dates)).toLocaleDateString() : '—';
+    const statusCounts = {};
+    STATUS_ORDER.forEach(s => { statusCounts[s] = r.projects.filter(p => (p.status||'Submitted')===s).length; });
+    return { ...r, total, avgScore, acceptRate, lastDate, statusCounts, decided: decided.length };
+  });
+
+  // Sort
+  reps.sort((a,b) => {
+    if (submitterSort === 'count') return b.total - a.total;
+    if (submitterSort === 'score') return b.avgScore - a.avgScore;
+    if (submitterSort === 'rate') return (b.acceptRate||0) - (a.acceptRate||0);
+    return 0;
+  });
+
+  const statusColors = { 'Submitted':'#185FA5','Under Review':'#BA7517','Accepted':'#3B6D11','Deferred':'#633806','Passed':'#a32d2d' };
+  const initials = name => name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+
+  container.innerHTML = `
+    <div class="submitter-sort-bar">
+      <span style="font-size:12px;color:#888;">Sort by</span>
+      ${[['count','Submissions'],['score','Avg score'],['rate','Acceptance rate']].map(([val,label]) =>
+        `<button class="kanban-sort-btn${submitterSort===val?' active':''}" onclick="submitterSort='${val}';renderSubmitters();">${label}</button>`
+      ).join('')}
+      <span style="font-size:12px;color:#aaa;margin-left:auto;">${reps.length} rep${reps.length!==1?'s':''}</span>
+    </div>
+    <div class="submitter-grid">
+      ${reps.map(r => `
+        <div class="submitter-card" onclick="filterToSubmitter('${r.email||r.name}')">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <div class="submitter-avatar">${initials(r.name)}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:500;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</div>
+              <div style="font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.email||'No email'}</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div class="submitter-stat">
+              <div class="submitter-stat-value">${r.total}</div>
+              <div class="submitter-stat-label">Submitted</div>
+            </div>
+            <div class="submitter-stat">
+              <div class="submitter-stat-value">${r.avgScore}</div>
+              <div class="submitter-stat-label">Avg score</div>
+            </div>
+            <div class="submitter-stat">
+              <div class="submitter-stat-value">${r.acceptRate !== null ? r.acceptRate+'%' : '—'}</div>
+              <div class="submitter-stat-label">Accept rate</div>
+            </div>
+          </div>
+          <div class="submitter-bar">
+            ${STATUS_ORDER.map(s => r.statusCounts[s] ? `<div style="flex:${r.statusCounts[s]};background:${statusColors[s]};border-radius:2px;" title="${s}: ${r.statusCounts[s]}"></div>` : '').join('')}
+          </div>
+          <div style="font-size:11px;color:#bbb;margin-top:6px;text-align:right;">Last submission ${r.lastDate}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function filterToSubmitter(key) {
+  showTab('tracker');
+  setTrackerView('list');
+  activeStatusFilter = 'All';
+  buildStatusFilterBar();
+  const container = document.getElementById('projects-list');
+  const filtered = projects.filter(p => {
+    const email = (p.lockedVals && p.lockedVals['__email__']) || '';
+    const name  = (p.lockedVals && p.lockedVals['__submitter__']) || '';
+    return email === key || name === key;
+  }).sort((a,b) => statusRank(a.status)-statusRank(b.status)||b.score-a.score);
+  if (!filtered.length) { container.innerHTML = '<div class="empty-state">No projects found for this rep.</div>'; return; }
+  container.innerHTML = '';
+  const allProjects = projects;
+  projects = filtered;
+  renderProjectList();
+  projects = allProjects;
+  toast('Showing projects for ' + (filtered[0].lockedVals['__submitter__']||key) + '. Click any status filter to reset.');
+}
+
+
+/* ── LIST FILTERS ── */
+let activeListFilters = { type: '', tier: '', date: '', rep: '' };
+
+function buildListFilterOptions() {
+  // Project types
+  const typeEl = document.getElementById('filter-type');
+  if (typeEl) {
+    const current = typeEl.value;
+    typeEl.innerHTML = '<option value="">All types</option>' +
+      projectTypeMappings.map(pt => `<option value="${pt.label}"${activeListFilters.type===pt.label?' selected':''}>${pt.label}</option>`).join('');
+    typeEl.value = current;
+  }
+  // Reps
+  const repEl = document.getElementById('filter-rep');
+  if (repEl) {
+    const reps = [...new Set(projects.map(p => (p.lockedVals&&p.lockedVals['__submitter__'])||'').filter(Boolean))].sort();
+    const current = repEl.value;
+    repEl.innerHTML = '<option value="">All reps</option>' +
+      reps.map(r => `<option value="${r}"${activeListFilters.rep===r?' selected':''}>${r}</option>`).join('');
+    repEl.value = current;
+  }
+}
+
+function applyListFilters() {
+  activeListFilters.type = (document.getElementById('filter-type')||{}).value || '';
+  activeListFilters.tier = (document.getElementById('filter-tier')||{}).value || '';
+  activeListFilters.date = (document.getElementById('filter-date')||{}).value || '';
+  activeListFilters.rep  = (document.getElementById('filter-rep') ||{}).value || '';
+
+  renderProjectList();
+}
+
+function clearListFilters() {
+  activeListFilters = { type: '', tier: '', date: '', rep: '' };
+  ['filter-type','filter-tier','filter-date','filter-rep'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  renderProjectList();
+}
+
+function getListFilteredProjects(list) {
+  return list.filter(p => {
+    if (activeListFilters.type && (p.projectType||'') !== activeListFilters.type) return false;
+    if (activeListFilters.tier && (p.tier||'') !== activeListFilters.tier) return false;
+    if (activeListFilters.rep  && ((p.lockedVals&&p.lockedVals['__submitter__'])||'') !== activeListFilters.rep) return false;
+    if (activeListFilters.date) {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const pDate = new Date(p.date);
+      if (isNaN(pDate)) return true;
+      if (activeListFilters.date === 'quarter') {
+        const qStart = new Date(today.getFullYear(), Math.floor(today.getMonth()/3)*3, 1);
+        if (pDate < qStart) return false;
+      } else {
+        const days = parseInt(activeListFilters.date);
+        const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - days);
+        if (pDate < cutoff) return false;
+      }
+    }
+    return true;
+  });
+}
+
 /* ── DEFERRED REMINDERS (now integrated into metrics) ── */
 function renderDeferredReminders() {
   const container = document.getElementById('deferred-reminders');
@@ -2104,6 +2453,7 @@ function renderDeferredReminders() {
 function renderTracker() {
   renderSummaryMetrics();
   buildStatusFilterBar();
+  buildListFilterOptions();
   renderProjectList();
   if (trackerView === 'board') renderKanban();
 }
@@ -2111,6 +2461,7 @@ function renderTracker() {
 function renderProjectList() {
   const container = document.getElementById('projects-list');
   let filtered = activeStatusFilter === 'All' ? [...projects] : projects.filter(p => (p.status || 'Submitted') === activeStatusFilter);
+  filtered = getListFilteredProjects(filtered);
   if (!filtered.length) {
     container.innerHTML = projects.length
       ? '<div class="empty-state">No projects with this status.</div>'
@@ -2238,7 +2589,7 @@ function renderProjectList() {
         <div class="btn-row">
           <button class="btn-secondary" style="font-size:12px;padding:6px 14px;" onclick="showDecisionEmailModal('${p.id}')">Send decision email</button>
           <button class="btn-secondary" style="font-size:12px;padding:6px 14px;" onclick="editProject('${p.id}')">Edit &amp; re-score</button>
-          <button class="btn-danger-inline" style="font-size:12px;" onclick="deleteProject('${p.id}')">Delete project</button>
+          <button class="btn-danger-inline" style="font-size:12px;" data-delete-id="${p.id}" onclick="deleteProject('${p.id}')">Delete project</button>
         </div>
       </div>`;
     container.appendChild(row);
@@ -2286,9 +2637,30 @@ function updateRevisitDate(id) {
 
 function monthNames() { return ['January','February','March','April','May','June','July','August','September','October','November','December']; }
 
-function deleteProject(id) {
-  if (!confirm('Delete this project?')) return;
+function deleteProject(id, confirmed) {
+  if (!confirmed) {
+    const btn = document.querySelector('[data-delete-id="' + id + '"]');
+    if (btn) {
+      btn.textContent = 'Confirm delete';
+      btn.style.background = '#E24B4A';
+      btn.style.color = '#fff';
+      btn.style.borderColor = '#E24B4A';
+      btn.setAttribute('onclick', 'deleteProject(' + JSON.stringify(id) + ', true)');
+      setTimeout(() => {
+        const b = document.querySelector('[data-delete-id="' + id + '"]');
+        if (b && b.textContent === 'Confirm delete') {
+          b.textContent = 'Delete project';
+          b.style.background = '';
+          b.style.color = '';
+          b.style.borderColor = '';
+          b.setAttribute('onclick', 'deleteProject(' + JSON.stringify(id) + ')');
+        }
+      }, 3000);
+    }
+    return;
+  }
   projects = projects.filter(p => p.id != id); persist(); renderTracker();
+  toast('Project deleted.');
 }
 
 let editingProjectId = null;
@@ -3857,6 +4229,7 @@ function importSubmission() {
 
 /* ── REP LINKS ── */
 const INTAKE_URL = 'https://nickporterfieldfullsteam.github.io/product-intake-scorecard/intake';
+let repLinks = JSON.parse(localStorage.getItem('pm_rep_links') || '[]');
 
 function generateRepLink() {
   const name = (document.getElementById('rep-link-name').value || '').trim();
@@ -3864,16 +4237,67 @@ function generateRepLink() {
   if (!name || !email) { toast('Please enter both a name and email.'); return; }
   const payload = btoa(JSON.stringify({ name, email }));
   const url = INTAKE_URL + '?r=' + encodeURIComponent(payload);
-  const output = document.getElementById('rep-link-output');
-  const urlEl = document.getElementById('rep-link-url');
-  if (output) output.style.display = 'block';
-  if (urlEl) urlEl.value = url;
+
+  // Save to list (update if same email already exists)
+  const existing = repLinks.findIndex(r => r.email === email);
+  const entry = { name, email, url, createdAt: new Date().toLocaleDateString() };
+  if (existing !== -1) {
+    repLinks[existing] = entry;
+    toast('Link updated for ' + name + '.');
+  } else {
+    repLinks.unshift(entry);
+    toast('Link generated for ' + name + '.');
+  }
+  localStorage.setItem('pm_rep_links', JSON.stringify(repLinks));
+  renderRepLinks();
+
+  // Clear inputs
+  document.getElementById('rep-link-name').value = '';
+  document.getElementById('rep-link-email').value = '';
 }
 
-function copyRepLink() {
-  const urlEl = document.getElementById('rep-link-url');
-  if (!urlEl) return;
-  navigator.clipboard.writeText(urlEl.value).then(() => toast('Link copied to clipboard!'));
+function copyRepLinkById(email) {
+  const entry = repLinks.find(r => r.email === email);
+  if (!entry) return;
+  navigator.clipboard.writeText(entry.url).then(() => toast('Link copied for ' + entry.name + '!'));
+}
+
+function deleteRepLink(email) {
+  repLinks = repLinks.filter(r => r.email !== email);
+  localStorage.setItem('pm_rep_links', JSON.stringify(repLinks));
+  renderRepLinks();
+  toast('Link removed.');
+}
+
+function renderRepLinks() {
+  const container = document.getElementById('rep-links-list');
+  if (!container) return;
+  if (!repLinks.length) { container.innerHTML = ''; return; }
+  container.innerHTML = `
+    <div style="margin-top:4px;">
+      <p style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Generated links</p>
+      ${repLinks.map(r => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0ee;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:500;color:#1a1a1a;">${r.name}</div>
+            <div style="font-size:12px;color:#888;">${r.email} · Generated ${r.createdAt}</div>
+          </div>
+          <button class="btn-secondary" style="font-size:12px;padding:4px 10px;flex-shrink:0;" onclick="copyRepLinkById('${r.email}')">Copy link</button>
+          <button class="btn-danger-inline" style="font-size:12px;" onclick="deleteRepLink('${r.email}')">Remove</button>
+        </div>`).join('')}
+    </div>`;
+}
+
+/* ── SAMPLE DATA GENERATOR ── */
+function clearSampleProjects() {
+  const count = projects.filter(p => p.isSample).length;
+  if (!count) { toast('No sample projects to clear.'); return; }
+  projects = projects.filter(p => !p.isSample);
+  persist();
+  renderTracker();
+  renderSummaryMetrics();
+  if (document.getElementById('tab-submitters').classList.contains('active')) renderSubmitters();
+  toast(count + ' sample project' + (count !== 1 ? 's' : '') + ' removed.');
 }
 
 /* ── SAMPLE DATA GENERATOR ── */
@@ -3882,9 +4306,14 @@ function generateSampleProjects() {
 
   const firstPt = projectTypeMappings[0] || { id: '', label: '' };
 
-  const reps = ['Sarah Chen', 'Marcus Webb', 'Priya Patel', 'Jordan Lee', 'Tom Nguyen', 'Dana Flores'];
+  // 4 reps with consistent name+email, reused across projects
+  const repProfiles = {
+    sarah:  { name: 'Sarah Chen',   email: 'sarah.chen@apexlogistics.com' },
+    marcus: { name: 'Marcus Webb',  email: 'marcus.webb@summithealth.org' },
+    priya:  { name: 'Priya Patel',  email: 'priya.patel@clearviewmedia.co' },
+    jordan: { name: 'Jordan Lee',   email: 'jordan.lee@ironwoodfinancial.com' },
+  };
   const companies = ['Apex Logistics', 'Summit Health', 'Clearview Media', 'Ironwood Financial', 'Nexus Retail', 'Bridgepoint Law', 'Harbor Analytics', 'Crestline Tech'];
-  const domains = ['apex.com', 'summithealth.org', 'clearviewmedia.co', 'ironwoodfinancial.com', 'nexusretail.com', 'bridgepointlaw.com', 'harboranalytics.io', 'crestlinetech.com'];
 
   // Build criteria vals using all criteria (not filtered by type)
   const sampleCriteriaVals = () => {
@@ -3911,16 +4340,16 @@ function generateSampleProjects() {
   };
 
   const samples = [
-    { name: 'Bulk data export API', company: companies[0], rep: reps[0], score: 84, status: 'Submitted', daysAgo: 2, ptLabel: firstPt.label, notes: '' },
-    { name: 'SSO / SAML integration', company: companies[1], rep: reps[1], score: 76, status: 'Under Review', daysAgo: 6, ptLabel: firstPt.label, notes: 'Discussing scope with engineering' },
-    { name: 'Custom reporting dashboard', company: companies[2], rep: reps[2], score: 91, status: 'Accepted', daysAgo: 14, ptLabel: firstPt.label, notes: 'High-value account, strong strategic fit. Adding to Q3 roadmap.' },
-    { name: 'Mobile app (iOS & Android)', company: companies[3], rep: reps[3], score: 58, status: 'Deferred', daysAgo: 21, ptLabel: firstPt.label, notes: 'Not enough demand yet. Revisit when 10+ accounts request it.', revisitDays: 45 },
-    { name: 'Zapier integration', company: companies[4], rep: reps[0], score: 43, status: 'Passed', daysAgo: 30, ptLabel: firstPt.label, notes: 'Low strategic fit. Pointed rep toward existing API documentation.' },
-    { name: 'Webhook notifications', company: companies[5], rep: reps[4], score: 72, status: 'Submitted', daysAgo: 1, ptLabel: firstPt.label, notes: '' },
-    { name: 'Multi-tenant permissions', company: companies[6], rep: reps[5], score: 88, status: 'Under Review', daysAgo: 4, ptLabel: firstPt.label, notes: 'Three enterprise accounts requesting this. Scheduling design review.' },
-    { name: 'PDF invoice generation', company: companies[7], rep: reps[2], score: 61, status: 'Deferred', daysAgo: 18, ptLabel: firstPt.label, notes: 'Low effort but low priority. Revisit next quarter.', revisitDays: -5 },
-    { name: 'Advanced search & filtering', company: companies[0], rep: reps[1], score: 79, status: 'Accepted', daysAgo: 45, ptLabel: firstPt.label, notes: 'Widely requested. Scoped and approved.' },
-    { name: 'White-label branding', company: companies[3], rep: reps[3], score: 35, status: 'Passed', daysAgo: 60, ptLabel: firstPt.label, notes: 'Outside current product direction.' },
+    { name: 'Bulk data export API',       company: companies[0], rep: repProfiles.sarah,  score: 84, status: 'Submitted',    daysAgo: 2,  ptLabel: firstPt.label, notes: '' },
+    { name: 'SSO / SAML integration',     company: companies[1], rep: repProfiles.marcus, score: 76, status: 'Under Review', daysAgo: 6,  ptLabel: firstPt.label, notes: 'Discussing scope with engineering' },
+    { name: 'Custom reporting dashboard', company: companies[2], rep: repProfiles.priya,  score: 91, status: 'Accepted',     daysAgo: 14, ptLabel: firstPt.label, notes: 'High-value account, strong strategic fit. Adding to Q3 roadmap.' },
+    { name: 'Mobile app (iOS & Android)', company: companies[3], rep: repProfiles.jordan, score: 58, status: 'Deferred',     daysAgo: 21, ptLabel: firstPt.label, notes: 'Not enough demand yet. Revisit when 10+ accounts request it.', revisitDays: 45 },
+    { name: 'Zapier integration',         company: companies[4], rep: repProfiles.sarah,  score: 43, status: 'Passed',       daysAgo: 30, ptLabel: firstPt.label, notes: 'Low strategic fit. Pointed rep toward existing API documentation.' },
+    { name: 'Webhook notifications',      company: companies[5], rep: repProfiles.marcus, score: 72, status: 'Submitted',    daysAgo: 1,  ptLabel: firstPt.label, notes: '' },
+    { name: 'Multi-tenant permissions',   company: companies[6], rep: repProfiles.priya,  score: 88, status: 'Under Review', daysAgo: 4,  ptLabel: firstPt.label, notes: 'Three enterprise accounts requesting this. Scheduling design review.' },
+    { name: 'PDF invoice generation',     company: companies[7], rep: repProfiles.priya,  score: 61, status: 'Deferred',     daysAgo: 18, ptLabel: firstPt.label, notes: 'Low effort but low priority. Revisit next quarter.', revisitDays: -5 },
+    { name: 'Advanced search & filtering',company: companies[0], rep: repProfiles.sarah,  score: 79, status: 'Accepted',     daysAgo: 45, ptLabel: firstPt.label, notes: 'Widely requested. Scoped and approved.' },
+    { name: 'White-label branding',       company: companies[3], rep: repProfiles.jordan, score: 35, status: 'Passed',       daysAgo: 60, ptLabel: firstPt.label, notes: 'Outside current product direction.' },
   ];
 
   // Use second project type if available for variety
@@ -3938,9 +4367,9 @@ function generateSampleProjects() {
     const pt = projectTypeMappings.find(x => x.label === s.ptLabel) || firstPt;
     const cVals = sampleCriteriaVals();
     const tier = getTier(s.score);
-    const repEmail = s.rep.toLowerCase().replace(' ', '.') + '@' + domains[i % domains.length];
     return {
       id: Date.now() + i,
+      isSample: true,
       name: s.name,
       score: s.score,
       tier: tier.label,
@@ -3956,8 +4385,8 @@ function generateSampleProjects() {
       lockedVals: {
         '__name__': s.name,
         '__customer__': s.company,
-        '__submitter__': s.rep,
-        '__email__': repEmail,
+        '__submitter__': s.rep.name,
+        '__email__': s.rep.email,
       },
     };
   });
@@ -4074,7 +4503,7 @@ function importProjects(event) {
 
 function clearAllProjects() {
   if (!projects.length) { toast('No projects to clear.'); return; }
-  if (!confirm('Delete all ' + projects.length + ' saved project(s)? This cannot be undone.')) return;
+  // confirm() blocked in some contexts — proceed directly
   projects = []; persist(); renderTracker();
   toast('All projects cleared.');
 }
@@ -4178,17 +4607,18 @@ function removeSalesHelpTopic(id) {
 
 /* ── TABS ── */
 function showTab(tab) {
-  ['intake','tracker','weights','editor','help','settings'].forEach(t => {
+  ['intake','tracker','submitters','weights','editor','help','settings'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
   });
   document.querySelectorAll('.tab').forEach((el, i) => {
-    el.classList.toggle('active', ['intake','tracker','weights','editor','help','settings'][i] === tab);
+    el.classList.toggle('active', ['intake','tracker','submitters','weights','editor','help','settings'][i] === tab);
   });
   if (tab === 'tracker') { renderTracker(); }
+  if (tab === 'submitters') { renderSubmitters(); }
   if (tab === 'weights') { buildPresetButtons(); buildWeightSliders(); buildTierThresholds(); buildProjectTypeMappings(); }
   if (tab === 'editor') { renderEditor(); renderDetailEditor(); }
   if (tab === 'help') { renderSalesHelpEditor(); setTimeout(loadQA, 50); }
-  if (tab === 'settings') { buildSettingsEmailJS(); }
+  if (tab === 'settings') { buildSettingsEmailJS(); renderRepLinks(); }
 }
 
 buildDetailFields();
