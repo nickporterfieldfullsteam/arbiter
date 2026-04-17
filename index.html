@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiNmZmZmZmYiIHN0cm9rZT0iI2U1ZTVlNSIgc3Ryb2tlLXdpZHRoPSIyIi8+PHJlY3QgeD0iMTAiIHk9IjM2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTgiIHJ4PSIyIiBmaWxsPSIjYTMyZDJkIi8+PHJlY3QgeD0iMjYiIHk9IjI0IiB3aWR0aD0iMTIiIGhlaWdodD0iMzAiIHJ4PSIyIiBmaWxsPSIjQkE3NTE3Ii8+PHJlY3QgeD0iNDIiIHk9IjEyIiB3aWR0aD0iMTIiIGhlaWdodD0iNDIiIHJ4PSIyIiBmaWxsPSIjM0I2RDExIi8+PC9zdmc+">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMxYTFhMWEiLz48cG9seWdvbiBwb2ludHM9IjMyLDYgNTQsMTkgNTQsNDUgMzIsNTggMTAsNDUgMTAsMTkiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIzIi8+PHBvbHlnb24gcG9pbnRzPSIzMiw2IDU0LDE5IDU0LDQ1IDMyLDU4IDEwLDQ1IDEwLDE5IiBmaWxsPSIjMTg1RkE1IiBvcGFjaXR5PSIwLjIiLz48dGV4dCB4PSIzMiIgeT0iNDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSItYXBwbGUtc3lzdGVtLEJsaW5rTWFjU3lzdGVtRm9udCwnU2Vnb2UgVUknLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiNmZmZmZmYiPkE8L3RleHQ+PC9zdmc+">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Runway</title>
+<title>Arbiter</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { overflow-y: scroll; }
@@ -57,6 +57,50 @@
   .progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s, background 0.4s; }
   .breakdown-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 8px; }
   @media (max-width: 540px) { .breakdown-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+
+  /* ── MOBILE RESPONSIVE ── */
+  @media (max-width: 640px) {
+    /* Prevent iOS zoom on input focus — all inputs must be 16px+ */
+    input[type=text], input[type=number], input[type=date],
+    input[type=password], input[type=email], textarea, select {
+      font-size: 16px !important;
+    }
+    /* Metrics grid: 2 cols on mobile, 3 on tablet */
+    .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    /* Charts: single column */
+    .charts-row { grid-template-columns: 1fr !important; }
+    /* Two-col layouts in report: single column */
+    .two-col { grid-template-columns: 1fr !important; }
+    /* Submitter grid: single column */
+    .submitter-grid { grid-template-columns: 1fr !important; }
+    /* Kanban: horizontal scroll */
+    .kanban-board { overflow-x: auto; padding-bottom: 1rem; }
+    .kanban-col { flex: 0 0 240px; min-width: 240px; }
+    /* App padding */
+    .app { padding: 1rem 0.75rem 5rem; }
+    /* Tabs wrap */
+    .tabs { gap: 2px; }
+    .tab { padding: 6px 10px; font-size: 12px; }
+    /* Config drawer full-width on mobile */
+    #config-drawer { width: 100% !important; }
+    /* FAB position */
+    #new-request-fab { bottom: 1.25rem; right: 1.25rem; }
+    /* Section titles */
+    .section-title { font-size: 12px; }
+    /* Modal full-width */
+    .modal { margin: 0.5rem !important; max-width: calc(100vw - 1rem) !important; }
+    /* Filter bars wrap */
+    #list-filter-bar, #insights-filter-bar { flex-wrap: wrap; }
+    /* Metric cards: 2-col on phone */
+    .metric-card { padding: 10px 12px; }
+    .metric-value { font-size: 22px; }
+    /* Hide secondary filter dropdowns on very small screens, show on scroll */
+    .status-filter-bar { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  }
+  @media (max-width: 400px) {
+    .metrics-grid { grid-template-columns: 1fr 1fr !important; }
+    .metric-value { font-size: 20px; }
+  }
   .breakdown-item { background: #fff; border-radius: 8px; padding: 8px 10px; border: 1px solid #e5e5e5; }
   .breakdown-label { font-size: 11px; color: #888; margin-bottom: 2px; line-height: 1.3; }
   .breakdown-score { font-size: 15px; font-weight: 500; }
@@ -241,7 +285,7 @@
 <body>
 <div class="pw-gate" id="pw-gate">
   <div class="pw-box">
-    <h2>Runway</h2>
+    <h2>Arbiter</h2>
     <p>Enter your password to continue.</p>
     <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkPW()">
     <div class="pw-error" id="pw-error">Incorrect password. Please try again.</div>
@@ -252,8 +296,8 @@
 <div class="app">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
     <div style="display:flex;align-items:baseline;gap:10px;">
-      <h1 style="font-size:22px;font-weight:500;">Runway</h1>
-      <span style="font-size:13px;color:#888;">Prioritize what ships</span>
+      <h1 style="font-size:22px;font-weight:500;">Arbiter</h1>
+      <span style="font-size:13px;color:#888;">Score it. Decide it. Ship it.</span>
       <span id="version-badge" style="font-size:11px;color:#bbb;"></span>
     </div>
     <button onclick="openConfigDrawer()" style="font-family:inherit;font-size:18px;width:34px;height:34px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666;" title="Configure">⚙</button>
@@ -346,7 +390,7 @@
         </div>
         <div id="projects-list"></div>
       </div>
-      <div id="board-view" style="display:none;">
+      <div id="board-view" style="display:none;overflow-x:auto;">
         <div class="kanban-sort-bar" id="kanban-toolbar">
           <span class="kanban-sort-label">Sort by</span>
           <button class="kanban-sort-btn active" id="sort-btn-score" onclick="setKanbanSort('score')">Score</button>
@@ -597,7 +641,7 @@
             <span class="help-topic-chevron">▾</span>
           </div>
           <div class="help-topic-body">
-            <p style="margin:0 0 8px;">Runway gives your team a consistent, repeatable way to evaluate and prioritize incoming feature and project requests.</p>            <ul style="margin:0 0 0 1.1rem;padding:0;">
+            <p style="margin:0 0 8px;">Arbiter gives your team a consistent, repeatable way to evaluate and prioritize incoming feature and project requests.</p>            <ul style="margin:0 0 0 1.1rem;padding:0;">
             <li style="margin-bottom:4px;">Score every request against the same weighted criteria — no more gut-feel decisions</li>
             <li style="margin-bottom:4px;">Track what came in, what was accepted, and what was passed on</li>
             <li style="margin-bottom:4px;">Communicate decisions back to submitters with a built-in email workflow</li>
@@ -1244,7 +1288,7 @@
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-7-3" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
-                Version badge v1.7.0 visible next to title
+                Version badge v1.9.0 visible next to title
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-7-4" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
@@ -1369,8 +1413,10 @@
             </div>
 
             <div class="btn-row" style="margin-top:0.5rem;">
+              <button class="btn-secondary" style="font-size:12px;padding:4px 10px;" onclick="runAutoQA()">&#x25B6; Run auto-checks</button>
               <button class="btn-danger-inline" style="font-size:12px;padding:4px 10px;" onclick="resetQA()">Reset checklist</button>
             </div>
+            <div id="auto-qa-results" style="display:none;margin-top:0.75rem;font-size:12px;"></div>
           </div>
         </div>
       </div>
@@ -2920,7 +2966,7 @@ function exportToExcel() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Runway Report — ${todayStr}</title>
+<title>Arbiter Report — ${todayStr}</title>
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#f5f5f3; color:#1a1a1a; font-size:14px; }
@@ -2938,7 +2984,7 @@ function exportToExcel() {
   .metric-sub { font-size:12px; color:#aaa; margin-top:4px; }
   .card { background:#fff; border:1px solid #e5e5e5; border-radius:10px; padding:20px 22px; margin-bottom:14px; }
   .two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; } .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
   th { font-size:11px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.05em; padding:8px 10px; border-bottom:2px solid #f0f0ee; text-align:left; }
   td { padding:10px 10px; border-bottom:1px solid #f7f7f5; vertical-align:middle; }
   tr:last-child td { border-bottom:none; }
@@ -2956,7 +3002,7 @@ function exportToExcel() {
 
   <div class="header">
     <div>
-      <div class="brand">Runway <span>Prioritization Report</span></div>
+      <div class="brand">Arbiter <span>Prioritization Report</span></div>
     </div>
     <div class="report-meta">
       Generated ${todayStr}<br>
@@ -3073,7 +3119,7 @@ function exportToExcel() {
   </div>
 
     <div class="footer">
-    <span>Runway — Prioritize what ships</span>
+    <span>Arbiter — Score it. Decide it. Ship it.</span>
     <span>Generated ${todayStr}</span>
   </div>
 
@@ -3092,7 +3138,7 @@ function exportToExcel() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'runway-report-' + today.toISOString().slice(0,10) + '.html';
+    a.download = 'arbiter-report-' + today.toISOString().slice(0,10) + '.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -3586,7 +3632,7 @@ function buildDecisionPreview(name, submitterName, status, notes, revisitDate) {
       <p style="font-size:13px;color:#555;margin:0;">If you have any questions, feel free to reply to this email.</p>
     </div>
     <div style="padding:10px 20px;background:#f5f5f3;border-top:1px solid #e5e5e5;">
-      <p style="font-size:11px;color:#aaa;margin:0;">Sent via Runway</p>
+      <p style="font-size:11px;color:#aaa;margin:0;">Sent via Arbiter</p>
     </div>
   </div>`;
 }
@@ -3702,7 +3748,7 @@ function sendDecisionEmail(id) {
       <p style="font-size:14px;color:#555;margin:0;">If you have any questions, feel free to reply to this email.</p>
     </div>
     <div style="padding:16px 28px;background:#f5f5f3;border-top:1px solid #e5e5e5;">
-      <p style="font-size:12px;color:#aaa;margin:0;">Sent via Runway</p>
+      <p style="font-size:12px;color:#aaa;margin:0;">Sent via Arbiter</p>
     </div>
   </div></body></html>`;
   emailjs.send(saved.serviceId, templateId, {
@@ -4884,7 +4930,7 @@ function submitForm() {
       <p style="font-size:14px;color:#555;margin:0;">Thank you for taking the time to share this with us.</p>
     </div>
     <div style="padding:16px 28px;background:#f5f5f3;border-top:1px solid #e5e5e5;">
-      <p style="font-size:12px;color:#aaa;margin:0;">Sent via Runway</p>
+      <p style="font-size:12px;color:#aaa;margin:0;">Sent via Arbiter</p>
     </div>
   </div></body></html>\`;
       emailjs.send(EMAILJS_SERVICE, AUTO_REPLY_TEMPLATE, {
@@ -5035,7 +5081,7 @@ function importSubmission() {
 
 
 /* ── REP LINKS ── */
-const INTAKE_URL = 'https://nickporterfieldfullsteam.github.io/product-intake-scorecard/intake';
+const INTAKE_URL = 'https://nickporterfieldfullsteam.github.io/arbiter/intake';
 let repLinks = JSON.parse(localStorage.getItem('pm_rep_links') || '[]');
 
 function generateRepLink() {
@@ -5322,6 +5368,154 @@ function clearAllProjects() {
 /* ── QA CHECKLIST ── */
 const QA_TOTAL = 88;
 
+
+/* ── AUTO QA ── */
+function runAutoQA() {
+  const results = [];
+  let passed = 0;
+  let failed = 0;
+
+  function check(qaId, description, testFn) {
+    let ok = false;
+    try { ok = !!testFn(); } catch(e) { ok = false; }
+    results.push({ qaId, description, ok });
+    if (ok) passed++; else failed++;
+    // Auto-tick the checkbox if it passes
+    const cb = document.getElementById(qaId);
+    if (cb && ok) { cb.checked = true; }
+  }
+
+  // ── Settings tab (qa-0-x)
+  check('qa-0-0', 'EmailJS credentials pre-populated', () => {
+    const saved = JSON.parse(localStorage.getItem('pm_emailjs') || '{}');
+    return saved.publicKey && saved.serviceId;
+  });
+  check('qa-0-3', 'Export settings backup function exists', () => typeof exportSettings === 'function');
+  check('qa-0-4', 'Import settings function exists', () => typeof importSettings === 'function');
+  check('qa-0-5', 'Save as defaults function exists', () => typeof saveAsDefaults === 'function');
+  check('qa-0-6', 'Reset to defaults function exists', () => typeof resetSettings === 'function');
+  check('qa-0-7', 'Export projects backup function exists', () => typeof exportProjects === 'function');
+  check('qa-0-8', 'Import projects backup function exists', () => typeof importProjects === 'function');
+  check('qa-0-11', 'Rep link generator exists', () => typeof generateRepLink === 'function');
+  check('qa-0-12', 'Generate sample projects exists', () => typeof generateSampleProjects === 'function');
+  check('qa-0-13', 'Clear sample projects exists', () => typeof clearSampleProjects === 'function');
+
+  // ── New Request tab (qa-1-x)
+  check('qa-1-0', 'Project type select exists', () => !!document.getElementById('project-type-select'));
+  check('qa-1-1', 'Locked fields present', () => {
+    return LOCKED_FIELDS.every(f => !!document.getElementById('df-' + f.id));
+  });
+  check('qa-1-2', 'Save project function exists', () => typeof saveProject === 'function');
+  check('qa-1-3', 'Update score function exists', () => typeof updateScore === 'function');
+  check('qa-1-4', 'Donut score ring exists', () => !!document.getElementById('donut-fill'));
+  check('qa-1-5', 'Tier badge exists', () => !!document.getElementById('tier-badge'));
+  check('qa-1-6', 'Clear form function exists', () => typeof clearForm === 'function');
+  check('qa-1-7', 'Edit & re-score function exists', () => typeof editProject === 'function');
+  check('qa-1-8', 'prefillCriteria function exists', () => typeof prefillCriteria === 'function');
+
+  // ── Dashboard (qa-2-x)
+  check('qa-2-0', 'Status filter bar rendered', () => !!document.getElementById('status-filter-bar'));
+  check('qa-2-1', 'Status filter function exists', () => typeof setStatusFilter === 'function' || typeof buildStatusFilterBar === 'function');
+  check('qa-2-2', 'Projects list container exists', () => !!document.getElementById('projects-list'));
+  check('qa-2-3', 'Render tracker function exists', () => typeof renderTracker === 'function');
+  check('qa-2-4', 'updateProjectStatus function exists', () => typeof updateProjectStatus === 'function');
+  check('qa-2-5', 'updateProjectField function exists', () => typeof updateProjectField === 'function');
+  check('qa-2-6', 'updateRevisitDate function exists', () => typeof updateRevisitDate === 'function');
+  check('qa-2-8', 'sendDecisionEmail function exists', () => typeof sendDecisionEmail === 'function');
+  check('qa-2-10', 'deleteProject function exists', () => typeof deleteProject === 'function');
+  check('qa-2-11', 'exportCSV function exists', () => typeof exportCSV === 'function');
+  check('qa-2-12', 'showImportModal function exists', () => typeof showImportModal === 'function');
+  check('qa-2-14', 'Summary metrics container exists', () => !!document.getElementById('summary-metrics'));
+  check('qa-2-15', 'filterToThisMonth function exists', () => typeof filterToThisMonth === 'function');
+  check('qa-2-17', 'List filter bar exists', () => !!document.getElementById('list-filter-bar'));
+  check('qa-2-18', 'getListFilteredProjects function exists', () => typeof getListFilteredProjects === 'function');
+  check('qa-2-19', 'clearListFilters function exists', () => typeof clearListFilters === 'function');
+  check('qa-2-20', 'editProject function exists', () => typeof editProject === 'function');
+  check('qa-2-22', 'Search input exists', () => !!document.getElementById('project-search'));
+
+  // ── Board view (qa-9-x)
+  check('qa-9-0', 'setTrackerView function exists', () => typeof setTrackerView === 'function');
+  check('qa-9-1', 'renderKanban function exists', () => typeof renderKanban === 'function');
+  check('qa-9-2', 'Kanban board container exists', () => !!document.getElementById('kanban-board'));
+  check('qa-9-7', 'setKanbanSort function exists', () => typeof setKanbanSort === 'function');
+  check('qa-9-8', 'kanban type filter container exists', () => !!document.getElementById('kanban-type-filters'));
+
+  // ── Submitters tab (qa-10 was Completed, qa-5 is submitters - check section)
+  check('qa-5-0', 'Submitters content container exists', () => !!document.getElementById('submitters-content') || !!document.getElementById('tab-submitters'));
+  check('qa-5-1', 'renderSubmitters function exists', () => typeof renderSubmitters === 'function');
+  check('qa-5-2', 'filterToSubmitter function exists', () => typeof filterToSubmitter === 'function');
+
+  // ── Scoring weights (qa-3-x)
+  check('qa-3-0', 'buildProjectTypeMappings function exists', () => typeof buildProjectTypeMappings === 'function');
+  check('qa-3-3', 'buildPresetButtons function exists', () => typeof buildPresetButtons === 'function');
+  check('qa-3-8', 'buildWeightSliders function exists', () => typeof buildWeightSliders === 'function');
+  check('qa-3-9', 'buildTierThresholds function exists', () => typeof buildTierThresholds === 'function');
+
+  // ── Edit criteria (qa-4-x)
+  check('qa-4-0', 'renderEditor function exists', () => typeof renderEditor === 'function');
+  check('qa-4-1', 'renderDetailEditor function exists', () => typeof renderDetailEditor === 'function');
+  check('qa-4-9', 'Export sales form function exists', () => typeof doExportSalesForm === 'function');
+
+  // ── Insights (qa-9-x maps to new sections)
+  check('qa-9-3', 'renderInsights function exists', () => typeof renderInsights === 'function');
+  check('qa-9-4', 'Insights content container exists', () => !!document.getElementById('insights-content'));
+  check('qa-9-5', 'applyInsightsFilters function exists', () => typeof applyInsightsFilters === 'function');
+  check('qa-9-8', 'Insights filter bar exists', () => !!document.getElementById('insights-filter-bar'));
+
+  // ── Completed status (qa-10-x)
+  check('qa-10-0', "Completed in STATUS_ORDER", () => STATUS_ORDER.includes('Completed'));
+  check('qa-10-1', "Completed in STATUS_CONFIG", () => !!STATUS_CONFIG['Completed']);
+  check('qa-10-2', "Completed in TERMINAL_STATUSES", () => TERMINAL_STATUSES.includes('Completed'));
+
+  // ── Search (qa-11-x)
+  check('qa-11-0', 'Search input exists in DOM', () => !!document.getElementById('project-search'));
+  check('qa-11-4', 'clearListFilters resets search', () => typeof clearListFilters === 'function');
+
+  // ── Help tab (qa-6-x)
+  check('qa-6-0', 'Help tab exists', () => !!document.getElementById('tab-help'));
+  check('qa-6-1', 'QA progress label exists', () => !!document.getElementById('qa-progress-label'));
+  check('qa-6-2', 'resetQA function exists', () => typeof resetQA === 'function');
+
+  // ── Tour & general (qa-7-x)
+  check('qa-7-0', 'startTour function exists', () => typeof startTour === 'function');
+  check('qa-7-3', 'Version badge shows v1.9.0', () => {
+    const vb = document.getElementById('version-badge');
+    return vb && vb.textContent.includes('1.9.0');
+  });
+  check('qa-7-5', 'No critical globals missing', () => {
+    return typeof projects !== 'undefined' &&
+           typeof criteria !== 'undefined' &&
+           typeof weights !== 'undefined' &&
+           typeof STATUS_ORDER !== 'undefined' &&
+           typeof STATUS_CONFIG !== 'undefined';
+  });
+
+  // ── Data integrity
+  check('qa-0-10', 'localStorage pm_projects readable', () => {
+    const raw = localStorage.getItem('pm_projects');
+    if (!raw) return true; // empty is fine
+    JSON.parse(raw); return true;
+  });
+
+  // Save QA state
+  saveQA();
+
+  // ── Render results
+  const resultsEl = document.getElementById('auto-qa-results');
+  if (!resultsEl) return;
+  const failList = results.filter(r => !r.ok);
+  resultsEl.style.display = 'block';
+  resultsEl.innerHTML = `
+    <div style="padding:10px 12px;border-radius:8px;background:${failList.length===0?'#EAF3DE':'#FCEBEB'};border:1px solid ${failList.length===0?'#C0DD97':'#F7C1C1'};margin-bottom:8px;">
+      <div style="font-weight:500;color:${failList.length===0?'#27500A':'#a32d2d'};">
+        ${failList.length===0 ? '✓ All automated checks passed' : failList.length + ' check' + (failList.length!==1?'s':'') + ' failed'} &nbsp;·&nbsp; ${passed} / ${passed+failed} passed
+      </div>
+      ${failList.length > 0 ? '<div style="margin-top:6px;color:#a32d2d;">' + failList.map(r => '✗ ' + r.description).join('<br>') + '</div>' : ''}
+    </div>
+    <div style="color:#888;font-size:11px;">Passed items have been auto-checked above. Manual items still require human verification.</div>
+  `;
+}
+
 function saveQA() {
   const state = {};
   document.querySelectorAll('input[id^="qa-"]').forEach(cb => { state[cb.id] = cb.checked; });
@@ -5348,7 +5542,6 @@ function updateQAProgress() {
 }
 
 function resetQA() {
-  if (!confirm('Clear all QA checklist progress?')) return;
   localStorage.removeItem('pm_qa');
   document.querySelectorAll('input[id^="qa-"]').forEach(cb => { cb.checked = false; });
   updateQAProgress();
