@@ -5983,6 +5983,16 @@ async function sendMagicLink() {
 }
 
 async function migrateFromLocalStorage() {
+  if (!currentWorkspaceId) {
+    // Workspace not loaded yet — load it first
+    if (currentUser) {
+      await loadWorkspace(currentUser.id);
+    }
+    if (!currentWorkspaceId) {
+      toast('Not logged in or workspace not found.');
+      return;
+    }
+  }
   const lsCriteria    = localStorage.getItem('pm_criteria');
   const lsWeights     = localStorage.getItem('pm_weights');
   const lsDetail      = localStorage.getItem('pm_detail_fields');
