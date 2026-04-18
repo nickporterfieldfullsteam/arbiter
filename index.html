@@ -5972,12 +5972,12 @@ async function loadWorkspace(userId) {
   console.log('[Arbiter] Loading workspace for user:', userId);
   const { data, error } = await _sb
     .from('workspace_members')
-    .select('workspace_id, role, workspaces(id, name)')
+    .select('workspace_id, role')
     .eq('user_id', userId)
     .limit(1)
     .single();
-  if (error) console.error('[Arbiter] loadWorkspace error:', error);
-  if (data) {
+  console.log('[Arbiter] loadWorkspace result:', JSON.stringify(data), 'error:', JSON.stringify(error));
+  if (data?.workspace_id) {
     currentWorkspaceId = data.workspace_id;
     console.log('[Arbiter] Workspace from DB:', currentWorkspaceId);
     return data;
