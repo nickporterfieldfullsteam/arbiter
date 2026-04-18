@@ -5983,16 +5983,8 @@ async function sendMagicLink() {
 }
 
 async function migrateFromLocalStorage() {
-  if (!currentWorkspaceId) {
-    // Workspace not loaded yet — load it first
-    if (currentUser) {
-      await loadWorkspace(currentUser.id);
-    }
-    if (!currentWorkspaceId) {
-      toast('Not logged in or workspace not found.');
-      return;
-    }
-  }
+  const wsId = currentWorkspaceId || DEFAULT_WORKSPACE_ID;
+  if (!wsId) { toast('Workspace not found.'); return; }
   const lsCriteria    = localStorage.getItem('pm_criteria');
   const lsWeights     = localStorage.getItem('pm_weights');
   const lsDetail      = localStorage.getItem('pm_detail_fields');
@@ -6019,9 +6011,10 @@ async function migrateFromLocalStorage() {
   console.log('[Arbiter] Migrating config to workspace:', currentWorkspaceId);
   console.log('[Arbiter] Update payload keys:', Object.keys(update));
 
+  console.log('[Arbiter] Migrating to workspace:', wsId);
   const { data, error } = await _sb.from('workspace_config')
     .update(update)
-    .eq('workspace_id', currentWorkspaceId)
+    .eq('workspace_id', wsId)
     .select();
 
   console.log('[Arbiter] Migration result:', JSON.stringify(data), 'error:', JSON.stringify(error));
@@ -6031,7 +6024,7 @@ async function migrateFromLocalStorage() {
     console.error('[Arbiter] Migration error:', error);
   } else if (!data || data.length === 0) {
     toast('No rows updated — check workspace ID');
-    console.error('[Arbiter] No rows matched workspace_id:', currentWorkspaceId);
+    console.error('[Arbiter] No rows matched workspace_id:', wsId);
   } else {
     toast('Config migrated! Reloading...');
     setTimeout(() => location.reload(), 1500);
