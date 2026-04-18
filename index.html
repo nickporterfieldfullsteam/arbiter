@@ -6006,13 +6006,22 @@ async function migrateFromLocalStorage() {
   if (lsHelp)       update.sales_help_topics     = JSON.parse(lsHelp);
   update.updated_at = new Date().toISOString();
 
-  const { error } = await _sb.from('workspace_config')
+  console.log('[Arbiter] Migrating config to workspace:', currentWorkspaceId);
+  console.log('[Arbiter] Update payload keys:', Object.keys(update));
+
+  const { data, error } = await _sb.from('workspace_config')
     .update(update)
-    .eq('workspace_id', currentWorkspaceId);
+    .eq('workspace_id', currentWorkspaceId)
+    .select();
+
+  console.log('[Arbiter] Migration result:', JSON.stringify(data), 'error:', JSON.stringify(error));
 
   if (error) {
     toast('Migration failed: ' + error.message);
     console.error('[Arbiter] Migration error:', error);
+  } else if (!data || data.length === 0) {
+    toast('No rows updated — check workspace ID');
+    console.error('[Arbiter] No rows matched workspace_id:', currentWorkspaceId);
   } else {
     toast('Config migrated! Reloading...');
     setTimeout(() => location.reload(), 1500);
