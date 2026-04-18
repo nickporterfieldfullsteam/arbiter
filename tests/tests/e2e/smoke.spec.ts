@@ -3,10 +3,10 @@ import { signOut } from '../helpers/auth';
 
 test.describe('Smoke', () => {
   test('app loads, sign-in succeeds, core UI is present', async ({ authedPage }) => {
-    // Version badge present
-    const badge = authedPage.locator('#version-badge');
-    await expect(badge).toBeVisible();
-    await expect(badge).toHaveText(/^v\d+\.\d+\.\d+$/);
+    // Footer shows version and build
+    const footerBuild = authedPage.locator('#footer-build');
+    await expect(footerBuild).toBeVisible();
+    await expect(footerBuild).toHaveText(/^v\d+\.\d+\.\d+ · Build: /);
 
     // Core tabs present
     await expect(authedPage.locator('#tab-btn-tracker')).toBeVisible();
