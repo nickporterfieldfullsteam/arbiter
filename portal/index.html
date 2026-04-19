@@ -436,8 +436,8 @@
  * Submit handler is a placeholder; real submission lands in B.2.b.
  * ============================================================ */
 
-const VERSION = '0.2.2';
-const BUILD_STAMP = '2026-04-19 05:56:04 PM EST';
+const VERSION = '0.2.3';
+const BUILD_STAMP = '2026-04-19 06:03:01 PM EST';
 
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
@@ -604,18 +604,45 @@ async function signOut() {
 }
 
 /* --- Fetch workspace config from Supabase --- */
+// We use raw fetch here rather than _sb.from(...).select() because the
+// Supabase JS client's query builder was reliably hanging after the
+// response arrived — status 200 and bytes transferred per DevTools,
+// but .single()'s Promise never resolved. Raw fetch with the session's
+// access token works reliably. This is a targeted workaround for the
+// config-load path; other Supabase client calls (auth, real-time) are
+// unaffected.
 async function loadWorkspaceConfig() {
-  const { data, error } = await _sb
-    .from('workspace_config')
-    .select('criteria, detail_fields, project_type_mappings, custom_presets, weights')
-    .eq('workspace_id', WORKSPACE_ID)
-    .single();
-
-  if (error) {
-    console.error('[Portal] Failed to load workspace config:', error);
+  try {
+    const { data: { session } } = await _sb.auth.getSession();
+    const token = session?.access_token;
+    if (!token) {
+      console.warn('[Portal] No access token available for config fetch');
+      return null;
+    }
+    const url = SUPABASE_URL + '/rest/v1/workspace_config'
+      + '?workspace_id=eq.' + encodeURIComponent(WORKSPACE_ID)
+      + '&select=criteria,detail_fields,project_type_mappings,custom_presets,weights,tier_thresholds';
+    const resp = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/json',
+      }
+    });
+    if (!resp.ok) {
+      console.error('[Portal] Config fetch failed:', resp.status, await resp.text());
+      return null;
+    }
+    const rows = await resp.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      console.warn('[Portal] No workspace_config row returned');
+      return null;
+    }
+    return rows[0];
+  } catch (err) {
+    console.error('[Portal] Config fetch exception:', err);
     return null;
   }
-  return data;
 }
 
 /* --- Form building --- */
