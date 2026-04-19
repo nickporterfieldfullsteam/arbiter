@@ -454,6 +454,14 @@ const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    // Dedicated storage key so the portal's auth session lives in its
+    // own localStorage bucket, separate from the main Arbiter app at
+    // /index.html and separate from the Supabase dashboard (both of
+    // which create their own clients using the default key). Without
+    // this, concurrent clients on the same origin sharing the default
+    // storage key can deadlock on session locks, causing queries from
+    // this client to hang indefinitely.
+    storageKey: 'sb-arbiter-portal-auth',
   }
 });
 

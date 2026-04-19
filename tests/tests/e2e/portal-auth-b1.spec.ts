@@ -146,7 +146,7 @@ test.describe('Phase 3 B.1 — Portal auth gate', () => {
         },
       };
       localStorage.setItem(
-        'sb-evjvdfqpsbnpfsmzhpfn-auth-token',
+        'sb-arbiter-portal-auth',
         JSON.stringify(session)
       );
     });

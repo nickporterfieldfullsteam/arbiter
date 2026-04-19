@@ -20,11 +20,12 @@ type PortalFixtures = {
 };
 
 /**
- * The localStorage key Supabase uses for its session.
- * Format: sb-<project-ref>-auth-token
+ * The localStorage key the portal's Supabase client uses for its session.
+ * The portal uses an isolated storage key (not the default
+ * sb-<project-ref>-auth-token) so it doesn't collide with the main
+ * Arbiter app or the Supabase dashboard on the same origin.
  */
-const SUPABASE_PROJECT_REF = 'evjvdfqpsbnpfsmzhpfn';
-const SB_AUTH_KEY = `sb-${SUPABASE_PROJECT_REF}-auth-token`;
+const SB_AUTH_KEY = 'sb-arbiter-portal-auth';
 
 /**
  * Resolve the portal URL from the test target's baseURL.
