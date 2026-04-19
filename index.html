@@ -1391,7 +1391,7 @@
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-7-3" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
-                Version v1.9.4 visible in footer
+                Version v1.9.5 visible in footer
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-7-4" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
@@ -1595,8 +1595,8 @@
 </footer>
 
 <script>
-const VERSION = '1.9.4';
-const BUILD_STAMP = '2026-04-18 11:46:16 PM EST';
+const VERSION = '1.9.5';
+const BUILD_STAMP = '2026-04-19 12:10:00 AM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -5753,9 +5753,9 @@ function runAutoQA() {
 
   // ── Tour & general (qa-7-x)
   check('qa-7-0', 'startTour function exists', () => typeof startTour === 'function');
-  check('qa-7-3', 'Footer shows v1.9.4 and build', () => {
+  check('qa-7-3', 'Footer shows v1.9.5 and build', () => {
     const fb = document.getElementById('footer-build');
-    return fb && fb.textContent.includes('1.9.4') && fb.textContent.includes('Build');
+    return fb && fb.textContent.includes('1.9.5') && fb.textContent.includes('Build');
   });
   check('qa-7-5', 'No critical globals missing', () => {
     return typeof projects !== 'undefined' &&
@@ -6192,6 +6192,32 @@ function showNewRequest() {
   const appEl = document.querySelector('.app');
   if (appEl) appEl.insertBefore(bar, appEl.children[2]);
   window.scrollTo(0, 0);
+  // Reset form state AFTER the tab is visible, so any unexpected error
+  // in the reset logic cannot prevent the tab from showing. Each step is
+  // individually null-checked; failures are silent (best-effort cleanup).
+  try {
+    // Tear down any prior edit state
+    if (editingProjectId) {
+      editingProjectId = null;
+      const saveBtn = document.querySelector('#tab-intake .btn-primary-lg');
+      if (saveBtn) { saveBtn.textContent = 'Save project'; saveBtn.style.background = ''; saveBtn.style.borderColor = ''; }
+    }
+    // Clear locked, detail, criteria inputs
+    if (typeof LOCKED_FIELDS !== 'undefined') LOCKED_FIELDS.forEach(f => {
+      const el = document.getElementById('df-' + f.id); if (el) el.value = '';
+    });
+    if (typeof detailFields !== 'undefined') detailFields.forEach(f => {
+      const el = document.getElementById('df-' + f.id); if (el) el.value = '';
+    });
+    if (typeof criteria !== 'undefined') criteria.forEach(c => {
+      const el = document.getElementById('dd-' + c.id); if (el) el.value = '';
+    });
+    // Reset project type select
+    const ptSel = document.getElementById('project-type-select');
+    if (ptSel) ptSel.value = '';
+  } catch (err) {
+    console.warn('[Arbiter] Form reset failed (non-fatal):', err);
+  }
 }
 
 /* ── HELP TOPICS ── */
