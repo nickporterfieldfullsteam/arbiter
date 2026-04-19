@@ -444,6 +444,7 @@
 
     <div class="btn-row">
       <button id="btn-save-project" class="btn-primary-lg" onclick="saveProject()">Save project</button>
+      <button id="btn-cancel-edit" class="btn-secondary-lg" onclick="confirmCancelEdit()" style="display:none;">Cancel</button>
       <button id="btn-clear-form" class="btn-secondary-lg" onclick="clearForm()">Clear form</button>
     </div>
   </div>
@@ -1391,7 +1392,7 @@
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-7-3" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
-                Version v1.9.5 visible in footer
+                Version v1.9.6 visible in footer
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-7-4" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
@@ -1595,8 +1596,8 @@
 </footer>
 
 <script>
-const VERSION = '1.9.5';
-const BUILD_STAMP = '2026-04-19 12:10:00 AM EST';
+const VERSION = '1.9.6';
+const BUILD_STAMP = '2026-04-19 09:42:48 AM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2160,6 +2161,11 @@ function saveProject() {
     editingProjectId = null;
     const saveBtn = document.querySelector('#tab-intake .btn-primary-lg');
     if (saveBtn) { saveBtn.textContent = 'Save project'; saveBtn.style.background = ''; saveBtn.style.borderColor = ''; }
+    // Swap cancel button back for clear-form button
+    const cancelBtnE = document.getElementById('btn-cancel-edit');
+    const clearBtnE = document.getElementById('btn-clear-form');
+    if (cancelBtnE) cancelBtnE.style.display = 'none';
+    if (clearBtnE) clearBtnE.style.display = '';
     toast('Project updated!');
     clearForm();
   } else {
@@ -3841,6 +3847,13 @@ function editProject(id) {
     saveBtn.style.borderColor = '#185FA5';
   }
 
+  // Swap clear-form for cancel during edit so the user has a clear
+  // escape hatch that discards (with confirmation) rather than saves.
+  const cancelBtn = document.getElementById('btn-cancel-edit');
+  const clearBtn = document.getElementById('btn-clear-form');
+  if (cancelBtn) cancelBtn.style.display = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+
   toast('Editing "' + p.name + '" — make changes and click Update project.');
 }
 
@@ -3852,7 +3865,23 @@ function cancelEdit() {
     saveBtn.style.background = '';
     saveBtn.style.borderColor = '';
   }
+  // Swap cancel button back for clear-form button
+  const cancelBtn = document.getElementById('btn-cancel-edit');
+  const clearBtn = document.getElementById('btn-clear-form');
+  if (cancelBtn) cancelBtn.style.display = 'none';
+  if (clearBtn) clearBtn.style.display = '';
   clearForm();
+}
+
+function confirmCancelEdit() {
+  // Show a confirmation before discarding in-progress edits.
+  // Native confirm() is fine here: blocking modal, keyboard accessible,
+  // no dependency on the app's custom modal system.
+  const proceed = window.confirm('Discard changes and return to the Dashboard?');
+  if (!proceed) return;
+  cancelEdit();
+  showTab('tracker');
+  toast('Edit cancelled — no changes saved.');
 }
 
 function fmtRevisitDate(rd) {
@@ -5753,9 +5782,9 @@ function runAutoQA() {
 
   // ── Tour & general (qa-7-x)
   check('qa-7-0', 'startTour function exists', () => typeof startTour === 'function');
-  check('qa-7-3', 'Footer shows v1.9.5 and build', () => {
+  check('qa-7-3', 'Footer shows v1.9.6 and build', () => {
     const fb = document.getElementById('footer-build');
-    return fb && fb.textContent.includes('1.9.5') && fb.textContent.includes('Build');
+    return fb && fb.textContent.includes('1.9.6') && fb.textContent.includes('Build');
   });
   check('qa-7-5', 'No critical globals missing', () => {
     return typeof projects !== 'undefined' &&
@@ -6202,6 +6231,11 @@ function showNewRequest() {
       const saveBtn = document.querySelector('#tab-intake .btn-primary-lg');
       if (saveBtn) { saveBtn.textContent = 'Save project'; saveBtn.style.background = ''; saveBtn.style.borderColor = ''; }
     }
+    // Ensure Cancel is hidden / Clear form is shown (pristine new-request state)
+    const cancelBtn = document.getElementById('btn-cancel-edit');
+    const clearBtn = document.getElementById('btn-clear-form');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = '';
     // Clear locked, detail, criteria inputs
     if (typeof LOCKED_FIELDS !== 'undefined') LOCKED_FIELDS.forEach(f => {
       const el = document.getElementById('df-' + f.id); if (el) el.value = '';
