@@ -436,8 +436,8 @@
  * Submit handler is a placeholder; real submission lands in B.2.b.
  * ============================================================ */
 
-const VERSION = '0.2.1';
-const BUILD_STAMP = '2026-04-19 05:51:24 PM EST';
+const VERSION = '0.2.2';
+const BUILD_STAMP = '2026-04-19 05:56:04 PM EST';
 
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
@@ -457,11 +457,17 @@ const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     // Dedicated storage key so the portal's auth session lives in its
     // own localStorage bucket, separate from the main Arbiter app at
     // /index.html and separate from the Supabase dashboard (both of
-    // which create their own clients using the default key). Without
-    // this, concurrent clients on the same origin sharing the default
-    // storage key can deadlock on session locks, causing queries from
-    // this client to hang indefinitely.
+    // which create their own clients using the default key).
     storageKey: 'sb-arbiter-portal-auth',
+    // No-op lock. Supabase's default lock uses navigator.locks to
+    // coordinate token refreshes across tabs, but this caused queries
+    // to hang indefinitely in practice — even with an isolated storage
+    // key. A no-op lock is safe for the portal because it's a single
+    // tab, single client; we don't need cross-tab coordination. If
+    // multiple portal tabs are ever open concurrently, the only
+    // downside is that token refresh may race (but worst case is a
+    // refreshed token being discarded and refetched — no data loss).
+    lock: async (_name, _acquireTimeout, fn) => await fn(),
   }
 });
 
