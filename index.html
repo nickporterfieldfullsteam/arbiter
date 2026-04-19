@@ -1392,7 +1392,7 @@
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-7-3" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
-                Version v1.9.6 visible in footer
+                Version v1.9.7 visible in footer
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-7-4" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
@@ -1596,8 +1596,8 @@
 </footer>
 
 <script>
-const VERSION = '1.9.6';
-const BUILD_STAMP = '2026-04-19 09:42:48 AM EST';
+const VERSION = '1.9.7';
+const BUILD_STAMP = '2026-04-19 09:47:28 AM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1804,6 +1804,10 @@ async function sbUpsertProject(proj) {
     previous_score: proj.previousScore || null,
     is_sample: proj.isSample || false
   };
+  // Allow callers to pin the creation timestamp (e.g. the sample generator,
+  // which backdates samples so they don't all appear as "today"). Regular
+  // user-created projects omit this and get the DB's default (NOW()).
+  if (proj.createdAt) row.created_at = proj.createdAt;
   try {
     if (proj.id && typeof proj.id === 'string' && proj.id.includes('-')) {
       const { data, error } = await _sb.from('projects').update(row).eq('id', proj.id).select().single();
@@ -5522,6 +5526,12 @@ async function generateSampleProjects() {
     samples[9].ptLabel = projectTypeMappings[2].label;
   }
 
+  const makeCreatedAt = (daysAgo) => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return d.toISOString();
+  };
+
   const newProjects = samples.map((s, i) => {
     const pt = projectTypeMappings.find(x => x.label === s.ptLabel) || firstPt;
     const cVals = sampleCriteriaVals();
@@ -5536,6 +5546,7 @@ async function generateSampleProjects() {
       decisionNotes: s.notes,
       revisitDate: s.revisitDays ? makeRevisit(s.revisitDays) : '',
       date: makeDate(s.daysAgo),
+      createdAt: makeCreatedAt(s.daysAgo),
       partial: false,
       projectType: pt.label,
       projectTypeId: pt.id,
@@ -5782,9 +5793,9 @@ function runAutoQA() {
 
   // ── Tour & general (qa-7-x)
   check('qa-7-0', 'startTour function exists', () => typeof startTour === 'function');
-  check('qa-7-3', 'Footer shows v1.9.6 and build', () => {
+  check('qa-7-3', 'Footer shows v1.9.7 and build', () => {
     const fb = document.getElementById('footer-build');
-    return fb && fb.textContent.includes('1.9.6') && fb.textContent.includes('Build');
+    return fb && fb.textContent.includes('1.9.7') && fb.textContent.includes('Build');
   });
   check('qa-7-5', 'No critical globals missing', () => {
     return typeof projects !== 'undefined' &&
