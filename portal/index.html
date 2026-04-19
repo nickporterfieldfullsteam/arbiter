@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbiter Portal</title>
+<link rel="icon" type="image/png" href="../favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { overflow-y: scroll; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f5f3;
+    color: #1a1a1a;
+    font-size: 16px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header — matches main Arbiter app */
+  .header {
+    background: #fff;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-mark { font-size: 18px; line-height: 1; }
+  .logo-text {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #1a1a1a;
+  }
+  .logo-sub {
+    font-size: 12px;
+    color: #888;
+    margin-left: auto;
+  }
+
+  /* Main content area */
+  .main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem 3rem;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 420px;
+    width: 100%;
+  }
+  .card h1 {
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+  .card p {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+
+  /* Form */
+  .field { margin-bottom: 1rem; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    color: #1a1a1a;
+  }
+  .field input:focus { outline: none; border-color: #1a1a1a; }
+  .field input[readonly] {
+    background: #f5f5f3;
+    color: #888;
+    cursor: default;
+  }
+
+  .btn-primary {
+    width: 100%;
+    background: #1a1a1a;
+    color: #fff;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    padding: 11px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn-primary:hover { background: #333; border-color: #333; }
+  .btn-primary:disabled {
+    background: #aaa;
+    border-color: #aaa;
+    cursor: not-allowed;
+  }
+
+  .btn-secondary {
+    background: #fff;
+    color: #1a1a1a;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn-secondary:hover { background: #fafaf9; }
+
+  /* Status messages */
+  .status-msg {
+    font-size: 13px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+  .status-msg.info {
+    background: #f0f7ff;
+    color: #185FA5;
+    border: 1px solid #d0e3f5;
+  }
+  .status-msg.success {
+    background: #f0faf0;
+    color: #1a7a1a;
+    border: 1px solid #d0ebd0;
+  }
+  .status-msg.error {
+    background: #fef0f0;
+    color: #a72020;
+    border: 1px solid #f5d0d0;
+  }
+
+  /* Signed-in placeholder */
+  .signed-in-info {
+    background: #fafaf9;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 1rem;
+  }
+  .signed-in-info .label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 4px;
+  }
+  .signed-in-info .value {
+    font-size: 14px;
+    color: #1a1a1a;
+    word-break: break-all;
+  }
+
+  .hidden { display: none !important; }
+
+  /* Footer */
+  .footer {
+    background: #fff;
+    border-top: 1px solid #e5e5e5;
+    padding: 10px 24px;
+    font-size: 11px;
+    color: #aaa;
+    text-align: center;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .footer .sep { margin: 0 8px; opacity: 0.5; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-mark">◆</div>
+  <div class="logo-text">ARBITER</div>
+  <div class="logo-sub">Portal</div>
+</div>
+
+<div class="main">
+  <!-- Signed-out view: magic-link request form -->
+  <div id="view-signin" class="card hidden">
+    <h1>Sign in</h1>
+    <p>Enter your email and we'll send you a sign-in link. No password needed.</p>
+
+    <div id="signin-status" class="status-msg hidden"></div>
+
+    <div class="field">
+      <label for="signin-email">Email</label>
+      <input id="signin-email" type="email" autocomplete="email" placeholder="you@example.com" required>
+    </div>
+
+    <button id="btn-send-link" class="btn-primary" onclick="sendMagicLink()">Send sign-in link</button>
+  </div>
+
+  <!-- Magic-link sent confirmation view -->
+  <div id="view-link-sent" class="card hidden">
+    <h1>Check your email</h1>
+    <p>We sent a sign-in link to <strong id="sent-email">your email</strong>. Click the link to continue. You can close this tab.</p>
+
+    <button class="btn-secondary" onclick="resetToSignin()">Use a different email</button>
+  </div>
+
+  <!-- Processing view: spinner while we verify the callback token -->
+  <div id="view-loading" class="card hidden">
+    <h1>Signing you in…</h1>
+    <p>Just a moment.</p>
+  </div>
+
+  <!-- Signed-in placeholder (B.3 will replace this with the real dashboard) -->
+  <div id="view-signed-in" class="card hidden">
+    <h1>You're signed in</h1>
+    <p>The rep dashboard is coming soon. For now, this confirms your authentication is working.</p>
+
+    <div class="signed-in-info">
+      <div class="label">Signed in as</div>
+      <div class="value" id="signed-in-email">—</div>
+    </div>
+
+    <button class="btn-secondary" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<div class="footer">
+  <span>© Arbiter</span>
+  <span class="sep">·</span>
+  <span>Portal v0.1.0</span>
+</div>
+
+<script>
+/* ============================================================
+ * Arbiter Portal — Step B.1
+ * Auth gate only. Full dashboard comes in B.3.
+ * ============================================================ */
+
+const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
+
+// The URL we ask Supabase to redirect the user back to after they click
+// the magic link in their email. Must be whitelisted in Supabase dashboard
+// Auth → URL Configuration.
+const REDIRECT_TO = window.location.origin + window.location.pathname;
+
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    // Store the session in localStorage so it persists across tab closes.
+    persistSession: true,
+    autoRefreshToken: true,
+    // detectSessionInUrl: true means Supabase will auto-process
+    // access_token in the URL hash (from the magic-link callback) on load.
+    detectSessionInUrl: true,
+  }
+});
+
+/* --- View helpers --- */
+const views = ['signin', 'link-sent', 'loading', 'signed-in'];
+function showView(name) {
+  views.forEach(v => {
+    const el = document.getElementById('view-' + v);
+    if (el) el.classList.toggle('hidden', v !== name);
+  });
+}
+
+function showStatus(kind, msg) {
+  const el = document.getElementById('signin-status');
+  el.className = 'status-msg ' + kind;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function clearStatus() {
+  const el = document.getElementById('signin-status');
+  el.classList.add('hidden');
+  el.textContent = '';
+}
+
+/* --- Rep link token parsing (backwards-compat with current form URLs) --- */
+// Current intake form uses ?r=<base64 of {name, email}> to identify the rep.
+// We honor the same format here purely for email pre-fill on first visit.
+// After sign-in, the auth session is the source of truth, not the token.
+function parseRepToken() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const r = params.get('r');
+    if (!r) return null;
+    const data = JSON.parse(atob(r));
+    return (data && typeof data === 'object') ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+/* --- Auth actions --- */
+async function sendMagicLink() {
+  const emailEl = document.getElementById('signin-email');
+  const email = (emailEl.value || '').trim().toLowerCase();
+
+  if (!email || !email.includes('@')) {
+    showStatus('error', 'Please enter a valid email address.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-send-link');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  clearStatus();
+
+  try {
+    const { error } = await _sb.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: REDIRECT_TO,
+        // shouldCreateUser: true (the default) means a brand-new email
+        // address will auto-create an auth.users row. This is what we
+        // want for reps invited by link who've never signed in before.
+      },
+    });
+
+    if (error) throw error;
+
+    document.getElementById('sent-email').textContent = email;
+    showView('link-sent');
+  } catch (err) {
+    console.error('[Portal] Magic link failed:', err);
+    showStatus('error', 'Something went wrong: ' + (err.message || 'please try again'));
+    btn.disabled = false;
+    btn.textContent = 'Send sign-in link';
+  }
+}
+
+function resetToSignin() {
+  clearStatus();
+  const btn = document.getElementById('btn-send-link');
+  btn.disabled = false;
+  btn.textContent = 'Send sign-in link';
+  showView('signin');
+}
+
+async function signOut() {
+  await _sb.auth.signOut();
+  // Reload to a clean state — clears all UI cached view state
+  window.location.href = window.location.pathname;
+}
+
+/* --- Initial load flow --- */
+async function init() {
+  // If we arrived here from a magic-link callback, the URL hash contains
+  // #access_token=... which Supabase's detectSessionInUrl picks up and
+  // processes into a session on its own. We just wait a tick and then
+  // check getSession() — no special callback handling needed here.
+
+  // Show a loading state if the URL looks like a callback
+  if (window.location.hash.includes('access_token')) {
+    showView('loading');
+  }
+
+  // Brief delay lets detectSessionInUrl finish its work
+  await new Promise(r => setTimeout(r, 200));
+
+  const { data: { session } } = await _sb.auth.getSession();
+
+  if (session && session.user) {
+    // Already signed in
+    document.getElementById('signed-in-email').textContent = session.user.email || '(no email)';
+    showView('signed-in');
+
+    // Clean the URL — remove hash fragment from the callback so reload
+    // doesn't show "access_token" in the address bar
+    if (window.location.hash) {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+    return;
+  }
+
+  // No session — show sign-in form, optionally pre-filled from the ?r= token
+  const repInfo = parseRepToken();
+  if (repInfo && repInfo.email) {
+    document.getElementById('signin-email').value = repInfo.email;
+  }
+
+  showView('signin');
+}
+
+// Listen for auth state changes (e.g. sign-out from another tab)
+_sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && session) {
+    document.getElementById('signed-in-email').textContent = session.user.email || '(no email)';
+    showView('signed-in');
+  } else if (event === 'SIGNED_OUT') {
+    showView('signin');
+  }
+});
+
+// Kick off
+init();
+
+// Allow submit-via-Enter in the email field
+document.getElementById('signin-email').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); sendMagicLink(); }
+});
+</script>
+
+</body>
+</html>
