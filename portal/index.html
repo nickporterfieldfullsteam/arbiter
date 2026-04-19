@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Arbiter Portal</title>
-<link rel="icon" type="image/png" href="../favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -16,50 +15,45 @@
     color: #1a1a1a;
     font-size: 16px;
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    padding-bottom: 40px;
   }
+  .app { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  @media (max-width: 600px) { .app { padding: 1rem 0.75rem 5rem; } }
 
-  /* Header — matches main Arbiter app */
-  .header {
-    background: #fff;
-    border-bottom: 1px solid #e5e5e5;
-    padding: 16px 24px;
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .brand-block {
     display: flex;
     align-items: center;
     gap: 12px;
   }
-  .logo-mark { font-size: 18px; line-height: 1; }
-  .logo-text {
+  .brand-text h1 {
     font-family: 'Montserrat', sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: #1a1a1a;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0;
+    line-height: 1.15;
   }
-  .logo-sub {
-    font-size: 12px;
-    color: #888;
-    margin-left: auto;
+  .brand-text .tagline {
+    font-size: 13px;
+    color: #aaa;
   }
 
-  /* Main content area */
-  .main {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem 1rem 3rem;
-  }
   .card {
     background: #fff;
     border: 1px solid #e5e5e5;
     border-radius: 12px;
     padding: 2rem;
     max-width: 420px;
-    width: 100%;
+    margin: 3rem auto 0;
   }
-  .card h1 {
+  .card h2 {
     font-size: 20px;
     font-weight: 500;
     margin-bottom: 0.5rem;
@@ -71,7 +65,6 @@
     line-height: 1.5;
   }
 
-  /* Form */
   .field { margin-bottom: 1rem; }
   .field label {
     display: block;
@@ -130,7 +123,6 @@
   }
   .btn-secondary:hover { background: #fafaf9; }
 
-  /* Status messages */
   .status-msg {
     font-size: 13px;
     padding: 12px 14px;
@@ -138,23 +130,10 @@
     margin-bottom: 1rem;
     line-height: 1.5;
   }
-  .status-msg.info {
-    background: #f0f7ff;
-    color: #185FA5;
-    border: 1px solid #d0e3f5;
-  }
-  .status-msg.success {
-    background: #f0faf0;
-    color: #1a7a1a;
-    border: 1px solid #d0ebd0;
-  }
-  .status-msg.error {
-    background: #fef0f0;
-    color: #a72020;
-    border: 1px solid #f5d0d0;
-  }
+  .status-msg.info    { background: #f0f7ff; color: #185FA5; border: 1px solid #d0e3f5; }
+  .status-msg.success { background: #f0faf0; color: #1a7a1a; border: 1px solid #d0ebd0; }
+  .status-msg.error   { background: #fef0f0; color: #a72020; border: 1px solid #f5d0d0; }
 
-  /* Signed-in placeholder */
   .signed-in-info {
     background: #fafaf9;
     border-radius: 8px;
@@ -176,35 +155,28 @@
   }
 
   .hidden { display: none !important; }
-
-  /* Footer */
-  .footer {
-    background: #fff;
-    border-top: 1px solid #e5e5e5;
-    padding: 10px 24px;
-    font-size: 11px;
-    color: #aaa;
-    text-align: center;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .footer .sep { margin: 0 8px; opacity: 0.5; }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="logo-mark">◆</div>
-  <div class="logo-text">ARBITER</div>
-  <div class="logo-sub">Portal</div>
-</div>
+<div class="app">
+  <div class="header-row">
+    <div class="brand-block">
+      <svg width="28" height="28" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0;">
+        <g transform="translate(0,40)">
+          <path d="M299.5,0L300.5,0C312.62,22.206 596.29,514.733 599.999,518.5C599.502,518.555 600.496,519.944 599.999,519.999C586.124,521.54 586.143,519.999 425.5,519.999C402.663,476.501 212.278,153.055 213.74,149.585C215.734,144.853 271.252,51.701 299.5,0Z" fill="rgb(35,35,55)"/>
+          <path d="M174.5,519.999L1.5,519.999C5.384,505.899 97.29,355.328 96.205,351.588C94.754,346.584 8.021,202.453 11.494,201.478C19.582,199.209 19.75,201.486 116.5,201.486C182.503,201.486 183.471,200.957 185.084,203.744C191.921,215.556 269.754,350.04 270.226,351.582C271.114,354.481 194.017,482.647 174.5,519.999Z" fill="rgb(0,199,111)"/>
+        </g>
+      </svg>
+      <div class="brand-text">
+        <h1>Arbiter <span style="font-family:inherit;font-weight:400;text-transform:none;letter-spacing:0;font-size:16px;color:#aaa;">Portal</span></h1>
+        <span class="tagline">Submit and track requests.</span>
+      </div>
+    </div>
+  </div>
 
-<div class="main">
-  <!-- Signed-out view: magic-link request form -->
   <div id="view-signin" class="card hidden">
-    <h1>Sign in</h1>
+    <h2>Sign in</h2>
     <p>Enter your email and we'll send you a sign-in link. No password needed.</p>
 
     <div id="signin-status" class="status-msg hidden"></div>
@@ -217,23 +189,20 @@
     <button id="btn-send-link" class="btn-primary" onclick="sendMagicLink()">Send sign-in link</button>
   </div>
 
-  <!-- Magic-link sent confirmation view -->
   <div id="view-link-sent" class="card hidden">
-    <h1>Check your email</h1>
+    <h2>Check your email</h2>
     <p>We sent a sign-in link to <strong id="sent-email">your email</strong>. Click the link to continue. You can close this tab.</p>
 
     <button class="btn-secondary" onclick="resetToSignin()">Use a different email</button>
   </div>
 
-  <!-- Processing view: spinner while we verify the callback token -->
   <div id="view-loading" class="card hidden">
-    <h1>Signing you in…</h1>
+    <h2>Signing you in…</h2>
     <p>Just a moment.</p>
   </div>
 
-  <!-- Signed-in placeholder (B.3 will replace this with the real dashboard) -->
   <div id="view-signed-in" class="card hidden">
-    <h1>You're signed in</h1>
+    <h2>You're signed in</h2>
     <p>The rep dashboard is coming soon. For now, this confirms your authentication is working.</p>
 
     <div class="signed-in-info">
@@ -245,38 +214,42 @@
   </div>
 </div>
 
-<div class="footer">
-  <span>© Arbiter</span>
-  <span class="sep">·</span>
-  <span>Portal v0.1.0</span>
-</div>
+<footer id="app-footer" style="position:fixed;bottom:0;left:0;right:0;height:40px;background:#fff;border-top:1px solid #e5e5e5;z-index:400;">
+  <div style="max-width:1100px;margin:0 auto;padding:0 1rem;height:100%;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#aaa;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <svg width="14" height="14" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g transform="translate(0,40)">
+          <path d="M299.5,0L300.5,0C312.62,22.206 596.29,514.733 599.999,518.5C599.502,518.555 600.496,519.944 599.999,519.999C586.124,521.54 586.143,519.999 425.5,519.999C402.663,476.501 212.278,153.055 213.74,149.585C215.734,144.853 271.252,51.701 299.5,0Z" fill="rgb(35,35,55)"/>
+          <path d="M174.5,519.999L1.5,519.999C5.384,505.899 97.29,355.328 96.205,351.588C94.754,346.584 8.021,202.453 11.494,201.478C19.582,199.209 19.75,201.486 116.5,201.486C182.503,201.486 183.471,200.957 185.084,203.744C191.921,215.556 269.754,350.04 270.226,351.582C271.114,354.481 194.017,482.647 174.5,519.999Z" fill="rgb(0,199,111)"/>
+        </g>
+      </svg>
+      <span>© Arbiter</span>
+    </div>
+    <span id="footer-build" style="color:#bbb;"></span>
+  </div>
+</footer>
 
 <script>
 /* ============================================================
- * Arbiter Portal — Step B.1
- * Auth gate only. Full dashboard comes in B.3.
+ * Arbiter Portal — Step B.1 (auth gate)
  * ============================================================ */
+
+const VERSION = '0.1.0';
+const BUILD_STAMP = '2026-04-19 10:25:00 AM EST';
 
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 
-// The URL we ask Supabase to redirect the user back to after they click
-// the magic link in their email. Must be whitelisted in Supabase dashboard
-// Auth → URL Configuration.
 const REDIRECT_TO = window.location.origin + window.location.pathname;
 
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    // Store the session in localStorage so it persists across tab closes.
     persistSession: true,
     autoRefreshToken: true,
-    // detectSessionInUrl: true means Supabase will auto-process
-    // access_token in the URL hash (from the magic-link callback) on load.
     detectSessionInUrl: true,
   }
 });
 
-/* --- View helpers --- */
 const views = ['signin', 'link-sent', 'loading', 'signed-in'];
 function showView(name) {
   views.forEach(v => {
@@ -298,10 +271,6 @@ function clearStatus() {
   el.textContent = '';
 }
 
-/* --- Rep link token parsing (backwards-compat with current form URLs) --- */
-// Current intake form uses ?r=<base64 of {name, email}> to identify the rep.
-// We honor the same format here purely for email pre-fill on first visit.
-// After sign-in, the auth session is the source of truth, not the token.
 function parseRepToken() {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -314,7 +283,6 @@ function parseRepToken() {
   }
 }
 
-/* --- Auth actions --- */
 async function sendMagicLink() {
   const emailEl = document.getElementById('signin-email');
   const email = (emailEl.value || '').trim().toLowerCase();
@@ -332,12 +300,7 @@ async function sendMagicLink() {
   try {
     const { error } = await _sb.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: REDIRECT_TO,
-        // shouldCreateUser: true (the default) means a brand-new email
-        // address will auto-create an auth.users row. This is what we
-        // want for reps invited by link who've never signed in before.
-      },
+      options: { emailRedirectTo: REDIRECT_TO },
     });
 
     if (error) throw error;
@@ -362,41 +325,27 @@ function resetToSignin() {
 
 async function signOut() {
   await _sb.auth.signOut();
-  // Reload to a clean state — clears all UI cached view state
   window.location.href = window.location.pathname;
 }
 
-/* --- Initial load flow --- */
 async function init() {
-  // If we arrived here from a magic-link callback, the URL hash contains
-  // #access_token=... which Supabase's detectSessionInUrl picks up and
-  // processes into a session on its own. We just wait a tick and then
-  // check getSession() — no special callback handling needed here.
-
-  // Show a loading state if the URL looks like a callback
   if (window.location.hash.includes('access_token')) {
     showView('loading');
   }
 
-  // Brief delay lets detectSessionInUrl finish its work
   await new Promise(r => setTimeout(r, 200));
 
   const { data: { session } } = await _sb.auth.getSession();
 
   if (session && session.user) {
-    // Already signed in
     document.getElementById('signed-in-email').textContent = session.user.email || '(no email)';
     showView('signed-in');
-
-    // Clean the URL — remove hash fragment from the callback so reload
-    // doesn't show "access_token" in the address bar
     if (window.location.hash) {
       history.replaceState(null, '', window.location.pathname + window.location.search);
     }
     return;
   }
 
-  // No session — show sign-in form, optionally pre-filled from the ?r= token
   const repInfo = parseRepToken();
   if (repInfo && repInfo.email) {
     document.getElementById('signin-email').value = repInfo.email;
@@ -405,7 +354,6 @@ async function init() {
   showView('signin');
 }
 
-// Listen for auth state changes (e.g. sign-out from another tab)
 _sb.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN' && session) {
     document.getElementById('signed-in-email').textContent = session.user.email || '(no email)';
@@ -415,10 +363,13 @@ _sb.auth.onAuthStateChange((event, session) => {
   }
 });
 
-// Kick off
+document.addEventListener('DOMContentLoaded', () => {
+  const fb = document.getElementById('footer-build');
+  if (fb) fb.textContent = 'v' + VERSION + ' · Build: ' + BUILD_STAMP;
+});
+
 init();
 
-// Allow submit-via-Enter in the email field
 document.getElementById('signin-email').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); sendMagicLink(); }
 });
