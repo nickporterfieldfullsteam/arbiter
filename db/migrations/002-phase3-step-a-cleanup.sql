@@ -16,19 +16,36 @@
 -- table, preserves the `pm` role (distinct from `admin`), and fixes the
 -- silent bug on workspace_config writes.
 --
+-- It also cleans up the `reps` table: drops the unused `token` column
+-- (groundwork for a custom-token auth flow we're no longer pursuing
+-- since Supabase magic-link replaces that pattern). `reps` is empty so
+-- the drop is zero-risk.
+--
 -- End state:
+--   reps:     cleaned schema (no token), 1 policy (ALL) — admin or PM.
+--             The 4 admin-only policies from 001 are dropped in favor
+--             of the pre-existing "PMs can manage reps" which already
+--             uses role IN (pm, admin).
 --   projects: 4 policies, one per command. Admin or PM for writes,
 --             submitter can read/insert/update-while-Submitted.
---   reps:     1 policy (ALL) — admin or PM only. The 4 admin-only policies
---             from 001 are dropped in favor of the pre-existing
---             "PMs can manage reps" which already uses role IN (pm, admin).
---   workspace_config: 2 policies. SELECT = "member of workspace OR rep
---                     linked to workspace". Writes = admin or PM.
+--   workspace_config: 4 policies. SELECT = "member of workspace OR
+--                     rep linked to workspace". Writes = admin or PM.
 --
 -- Rollback: see ROLLBACK section at the end.
 -- =========================================================================
 
 BEGIN;
+
+-- -------------------------------------------------------------------------
+-- 0. reps table schema cleanup
+-- -------------------------------------------------------------------------
+-- Drop the unused token column and its unique index. This was groundwork
+-- for a custom rep-auth token design; Phase 3 uses Supabase magic-link
+-- instead. The column is NOT NULL so any future INSERT into reps would
+-- require supplying a token — dropping it simplifies the rep-management
+-- UI we'll build later. reps is empty (0 rows) so there's no data loss.
+ALTER TABLE reps DROP COLUMN IF EXISTS token;
+-- The unique index reps_token_key is automatically dropped with the column.
 
 -- -------------------------------------------------------------------------
 -- 1. projects — drop everything and rebuild
@@ -148,7 +165,7 @@ CREATE POLICY workspace_config_select ON workspace_config
       SELECT 1 FROM reps
       WHERE reps.workspace_id = workspace_config.workspace_id
         AND reps.email = auth.email()
-        AND reps.active = true
+        AND reps.is_active = true
     )
   );
 
@@ -224,12 +241,20 @@ SELECT count(*) AS total_projects FROM projects;
 -- =========================================================================
 -- ROLLBACK (reference — do not run unless reverting)
 -- =========================================================================
--- This restores migration 001's policies exactly. The old pre-001 policies
--- (e.g., "Members can read projects", "PMs can update config") are NOT
--- recreated — they were intentionally retired here. If you need them back,
--- restore from a DB backup.
+-- This restores migration 001's policies exactly and recreates the
+-- reps.token column. The old pre-001 policies (e.g. "Members can read
+-- projects", "PMs can update config") are NOT recreated — they were
+-- intentionally retired here. If you need them back, restore from a DB
+-- backup.
 --
 -- BEGIN;
+--   -- Recreate the reps.token column (was dropped in step 0)
+--   ALTER TABLE reps ADD COLUMN token text;
+--   -- Note: the original had NOT NULL and a UNIQUE constraint. Since we
+--   -- have 0 rows either way, you can re-add those after if desired:
+--   --   ALTER TABLE reps ALTER COLUMN token SET NOT NULL;
+--   --   ALTER TABLE reps ADD CONSTRAINT reps_token_key UNIQUE (token);
+--
 --   DROP POLICY IF EXISTS projects_select ON projects;
 --   DROP POLICY IF EXISTS projects_insert ON projects;
 --   DROP POLICY IF EXISTS projects_update ON projects;
