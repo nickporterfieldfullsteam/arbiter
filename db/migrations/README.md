@@ -35,7 +35,7 @@ project. They are applied in numeric order.
 | # | File | Applied | Summary |
 |---|------|---------|---------|
 | 001 | `001-phase3-step-a-initial-rls.sql` | 2026-04-19 | Added `submitter_email` column, `reps` table, initial RLS policies on `projects` and `reps`, permissive SELECT on `workspace_config`. |
-| 002 | `002-phase3-step-a-cleanup.sql` | _pending_ | Consolidated overlapping policies, preserved `pm` role alongside `admin`, fixed silent bug in `workspace_config` write policy, tightened portal SELECT to scope by workspace membership or active rep. |
+| 002 | `002-phase3-step-a-cleanup.sql` | 2026-04-19 | Consolidated overlapping policies, preserved `pm` role alongside `admin`, fixed silent bug in `workspace_config` write policy, tightened portal SELECT to scope by workspace membership or active rep. |
 
 When you apply a new migration, update this table with the date and a
 one-line summary. The point isn't bureaucracy — it's so future-you (or a
