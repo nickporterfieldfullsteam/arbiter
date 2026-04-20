@@ -103,8 +103,12 @@ test.describe('v1.9.3 persistence fixes', () => {
     await authedPage.locator(`#km-rd-d-${projectId}`).selectOption('15');
     await authedPage.locator(`#km-rd-y-${projectId}`).selectOption('2027');
 
-    // Allow the async sbUpdateProjectField() call time to complete
-    await authedPage.waitForTimeout(500);
+    // Revisit-date writes are now debounced (250ms after the last select
+    // change) to coalesce rapid multi-select edits into a single PATCH.
+    // Wait long enough for: debounce window (250ms) + async PATCH RTT +
+    // comfortable margin. Reloading before the PATCH completes would
+    // cancel the pending timer and lose the write.
+    await authedPage.waitForTimeout(1000);
 
     // Reload and check DB directly
     await authedPage.reload();

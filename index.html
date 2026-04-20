@@ -1843,6 +1843,39 @@ async function sbUpdateProjectField(id, dbField, value) {
   await _sb.from('projects').update({ [dbField]: value }).eq('id', id);
 }
 
+/**
+ * Debounced revisit-date PATCH.
+ *
+ * Revisit dates are composed of three <select>s (month/day/year). Every
+ * onchange triggered a PATCH; changing all three in rapid succession
+ * fired three PATCHes whose network ordering isn't guaranteed. A late-
+ * arriving earlier PATCH with an incomplete date could overwrite the
+ * correct final value, landing `null` in the DB instead of the picked
+ * date. Real users rarely hit this (hundreds of ms between clicks),
+ * but test automation and keyboard-driven navigation both can.
+ *
+ * This helper:
+ *   - Updates local state immediately (so UI stays in sync)
+ *   - Queues a single PATCH 250ms after the last change for that id
+ *   - Cancels any pending timer for the same id on each new call
+ *
+ * Result: ONE PATCH per revisit-date edit session, always carrying the
+ * final value.
+ */
+const _revisitPatchTimers = new Map();
+function debouncedPatchRevisitDate(id, val) {
+  const p = projects.find(x => x.id == id);
+  if (p) p.revisitDate = val;
+  if (_revisitPatchTimers.has(id)) {
+    clearTimeout(_revisitPatchTimers.get(id));
+  }
+  const t = setTimeout(() => {
+    _revisitPatchTimers.delete(id);
+    sbUpdateProjectField(id, 'revisit_date', val || null);
+  }, 250);
+  _revisitPatchTimers.set(id, t);
+}
+
 function getWeight(id) { return weights[id] !== undefined ? weights[id] : 1.5; }
 
 let activeProjectTypeId = null;
@@ -2552,8 +2585,8 @@ function openKanbanCard(id) {
       const d2 = (document.getElementById(`km-rd-d-${p.id}`)||{}).value||'';
       const y2 = (document.getElementById(`km-rd-y-${p.id}`)||{}).value||'';
       const val = (y2&&m2&&d2) ? y2+'-'+m2+'-'+d2 : '';
-      p.revisitDate = val;
-      sbUpdateProjectField(p.id, 'revisit_date', val || null);
+      // debouncedPatchRevisitDate sets p.revisitDate + schedules a single PATCH
+      debouncedPatchRevisitDate(p.id, val);
       if (val) toast('Revisit date set to ' + (monthNames()[parseInt(m2)-1]) + ' ' + parseInt(d2) + ', ' + y2 + '.');
     };
   });
@@ -3747,8 +3780,8 @@ function updateRevisitDate(id) {
   const val = (y && m && d) ? y + '-' + m + '-' + d : '';
   const displayVal = (y && m && d) ? monthNames()[parseInt(m)-1] + ' ' + parseInt(d) + ', ' + y : '';
   const p = projects.find(x => x.id == id); if (!p) return;
-  p.revisitDate = val;
-  sbUpdateProjectField(id, 'revisit_date', val || null);
+  // debouncedPatchRevisitDate sets p.revisitDate + schedules a single PATCH
+  debouncedPatchRevisitDate(id, val);
   renderSummaryMetrics();
   if (val) toast('Revisit date set to ' + displayVal + '.');
 }
