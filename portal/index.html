@@ -47,10 +47,6 @@
   .status-msg.success { background: #f0faf0; color: #1a7a1a; border: 1px solid #d0ebd0; }
   .status-msg.error   { background: #fef0f0; color: #a72020; border: 1px solid #f5d0d0; }
 
-  .signed-in-info { background: #fafaf9; border-radius: 8px; padding: 14px 16px; margin-bottom: 1rem; }
-  .signed-in-info .label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
-  .signed-in-info .value { font-size: 14px; color: #1a1a1a; word-break: break-all; }
-
   .hidden { display: none !important; }
 
   .section { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
@@ -91,6 +87,47 @@
 
   .toast { position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 500; }
   .toast.show { opacity: 1; }
+
+  /* ── B.3: dashboard summary + filter bar ── */
+  .summary-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 0.65rem 1rem; margin-bottom: 1rem; font-size: 13px; color: #555; }
+  .summary-bar .summary-count { background: #fafaf9; border: 1px solid #e5e5e5; border-radius: 20px; padding: 3px 10px; font-size: 12px; }
+  .summary-bar .summary-count strong { color: #1a1a1a; }
+
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 1rem; }
+  .filter-bar .filter-group { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; }
+  .filter-bar select { font-family: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid #e5e5e5; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
+
+  /* ── B.3: submission list row (clickable) ── */
+  .submission-row { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 0.85rem 1rem; margin-bottom: 0.5rem; cursor: pointer; transition: background 0.1s, border-color 0.1s; }
+  .submission-row:hover { background: #fafaf9; border-color: #ddd; }
+  .submission-row .row-inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .submission-row .row-name { font-size: 14px; font-weight: 500; }
+  .submission-row .row-sub { font-size: 12px; color: #888; margin-top: 2px; }
+
+  /* Status badges — color-coded by status */
+  .status-badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; border: 1px solid; white-space: nowrap; flex-shrink: 0; }
+  .status-badge.status-Submitted      { color: #185FA5; background: #f0f7ff; border-color: #d0e3f5; }
+  .status-badge.status-Evaluating     { color: #6b4a00; background: #fff9ed; border-color: #f5e3d0; }
+  .status-badge.status-Pursue         { color: #1a7a1a; background: #f0faf0; border-color: #d0ebd0; }
+  .status-badge.status-Evaluate       { color: #6b4a00; background: #fff9ed; border-color: #f5e3d0; }
+  .status-badge.status-Defer          { color: #555;    background: #fafaf9; border-color: #e5e5e5; }
+  .status-badge.status-Deferred       { color: #555;    background: #fafaf9; border-color: #e5e5e5; }
+  .status-badge.status-Pass           { color: #a72020; background: #fef0f0; border-color: #f5d0d0; }
+  .status-badge.status-Passed         { color: #a72020; background: #fef0f0; border-color: #f5d0d0; }
+
+  /* ── B.3: detail view ── */
+  .detail-section { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+  .detail-section.accent-blue  { border-left: 3px solid #378ADD; border-radius: 0 12px 12px 0; }
+  .detail-section.accent-amber { border-left: 3px solid #BA7517; border-radius: 0 12px 12px 0; }
+  .detail-section.accent-green { border-left: 3px solid #1a7a1a; border-radius: 0 12px 12px 0; }
+  .detail-kv { margin-bottom: 0.85rem; }
+  .detail-kv:last-child { margin-bottom: 0; }
+  .detail-kv .k { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
+  .detail-kv .v { font-size: 14px; color: #1a1a1a; line-height: 1.4; white-space: pre-wrap; }
+  .detail-kv .v.empty { color: #aaa; font-style: italic; }
+
+  .detail-header-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .detail-header-row .status-badge { font-size: 12px; padding: 5px 12px; }
 </style>
 </head>
 <body>
@@ -114,21 +151,17 @@
   <div id="view-signin" class="card hidden">
     <h2>Sign in</h2>
     <p>Enter your email and we'll send you a sign-in link. No password needed.</p>
-
     <div id="signin-status" class="status-msg hidden"></div>
-
     <div class="field">
       <label for="signin-email">Email</label>
       <input id="signin-email" type="email" autocomplete="email" placeholder="you@example.com" required>
     </div>
-
     <button id="btn-send-link" class="btn-primary" onclick="sendMagicLink()">Send sign-in link</button>
   </div>
 
   <div id="view-link-sent" class="card hidden">
     <h2>Check your email</h2>
     <p>We sent a sign-in link to <strong id="sent-email">your email</strong>. Click the link to continue. You can close this tab.</p>
-
     <button class="btn-secondary" onclick="resetToSignin()">Use a different email</button>
   </div>
 
@@ -138,6 +171,7 @@
   </div>
 
   <div id="view-signed-in" class="hidden">
+    <!-- Dashboard: list + filters + summary -->
     <div id="sub-dashboard">
       <div class="dashboard-bar">
         <div>
@@ -145,6 +179,25 @@
           <div class="title-sub">Signed in as <span id="signed-in-email-inline">—</span></div>
         </div>
         <button class="btn-primary" style="width:auto;padding:10px 16px;" onclick="showFormView()">+ Submit a request</button>
+      </div>
+
+      <div id="dashboard-summary" class="summary-bar hidden"></div>
+
+      <div id="dashboard-filters" class="filter-bar hidden">
+        <div class="filter-group">
+          <label for="filter-status">Status</label>
+          <select id="filter-status" onchange="applyListFilters()">
+            <option value="">All</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filter-sort">Sort</label>
+          <select id="filter-sort" onchange="applyListFilters()">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="status">By status</option>
+          </select>
+        </div>
       </div>
 
       <div id="submissions-list">
@@ -156,13 +209,14 @@
       </div>
     </div>
 
+    <!-- Form: new submission (also reused for edit via setFormMode) -->
     <div id="sub-form" class="hidden">
       <div class="dashboard-bar">
         <div>
-          <div class="title">Submit a request</div>
-          <div class="title-sub">All fields feed the product team's review.</div>
+          <div class="title" id="form-title">Submit a request</div>
+          <div class="title-sub" id="form-subtitle">All fields feed the product team's review.</div>
         </div>
-        <button class="btn-secondary" onclick="showDashboardView()">← Back</button>
+        <button class="btn-secondary" onclick="cancelForm()">← Back</button>
       </div>
 
       <div class="section" id="section-project-type">
@@ -188,8 +242,42 @@
 
       <div id="form-submit-status" class="status-msg hidden"></div>
       <div class="submit-row">
-        <button id="btn-submit-request" class="btn-primary" onclick="submitRequest()">Submit request</button>
-        <button class="btn-secondary" onclick="showDashboardView()">Cancel</button>
+        <button id="btn-submit-request" class="btn-primary" onclick="submitForm()">Submit request</button>
+        <button class="btn-secondary" onclick="cancelForm()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Detail: read-only view of a single submission -->
+    <div id="sub-detail" class="hidden">
+      <div class="dashboard-bar">
+        <div>
+          <div class="title" id="detail-title">Submission details</div>
+          <div class="title-sub" id="detail-subtitle">&nbsp;</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button id="detail-edit-btn" class="btn-primary" style="width:auto;padding:8px 14px;font-size:13px;" onclick="startEdit()">Edit</button>
+          <button class="btn-secondary" onclick="showDashboardView()">← Back</button>
+        </div>
+      </div>
+
+      <div class="detail-section accent-green" id="detail-status-section">
+        <div class="section-title">Status</div>
+        <div id="detail-status-body"></div>
+      </div>
+
+      <div class="detail-section" id="detail-projecttype-section">
+        <div class="section-title">Project type</div>
+        <div id="detail-projecttype-body"></div>
+      </div>
+
+      <div class="detail-section accent-blue" id="detail-details-section">
+        <div class="section-title">Project details</div>
+        <div id="detail-details-body"></div>
+      </div>
+
+      <div class="detail-section accent-amber" id="detail-criteria-section">
+        <div class="section-title">Scoring criteria</div>
+        <div id="detail-criteria-body"></div>
       </div>
     </div>
   </div>
@@ -212,26 +300,23 @@
 
 <script>
 /* ============================================================
- * Arbiter Portal — raw-fetch architecture
- * No Supabase JS client. All auth + data via direct REST calls.
+ * Arbiter Portal — raw-fetch architecture, v0.4.0 (B.3 rich dashboard)
  *
- * Background: through v0.1.0–v0.2.3 the portal used
- * @supabase/supabase-js. In this environment its auth module
- * reliably hangs getSession() and .from().select() on page
- * refresh. Multiple config-level fixes (storageKey isolation,
- * no-op locks, autoRefresh tweaks) didn't help. We confirmed
- * raw fetch against /rest/v1 works reliably under the exact
- * same conditions. This file replaces the client entirely.
+ * B.3 adds:
+ *   - Detail view (click a submission to see full contents)
+ *   - Edit mode (reuses the form, works only while status='Submitted')
+ *   - Filter bar (status + sort)
+ *   - Summary counts (by status)
  *
- * What we trade for reliability:
- *   - No automatic token refresh (token expires after 1hr)
- *   - No multi-tab auth state sync (don't need it)
- *   - Have to write our own REST helpers (done, see sbSelectOne/
- *     sbSelectMany/sbInsert/sbUpdate below)
+ * Score + tier stay HIDDEN from reps (per design). Edit is gated
+ * both in the UI (Edit button hidden if status != 'Submitted')
+ * and at the DB layer (migration 002's RLS policy). If a PM
+ * changes status after the rep opens the edit form, the PATCH
+ * will fail cleanly; we show an error and revert to the list.
  * ============================================================ */
 
-const VERSION = '0.3.0';
-const BUILD_STAMP = '2026-04-20 04:40:59 PM EST';
+const VERSION = '0.4.0';
+const BUILD_STAMP = '2026-04-20 06:38:17 PM EST';
 
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
@@ -249,6 +334,12 @@ let currentSession = null;
 let currentUser = null;
 let workspaceConfig = null;
 let activeProjectTypeId = null;
+
+/* Runtime state for list + detail */
+let submissionsCache = [];       // last-fetched rows
+let currentDetailId = null;      // project id currently in detail view
+let formMode = 'new';            // 'new' | 'edit'
+let formEditId = null;           // project id when formMode === 'edit'
 
 /* ============================================================
  * Auth — hand-rolled
@@ -303,11 +394,6 @@ async function sendOtp(email, redirectTo) {
   return true;
 }
 
-/**
- * Parse access_token callback from URL hash. Supabase redirects with:
- *   #access_token=...&refresh_token=...&expires_in=...&token_type=bearer
- * Returns parsed session or null if no callback hash.
- */
 function parseCallbackFromUrl() {
   const hash = window.location.hash;
   if (!hash || !hash.includes('access_token=')) return null;
@@ -379,7 +465,6 @@ async function sbSelectOne(table, filter, select) {
 async function sbSelectMany(table, filter, select, order) {
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(filter)) {
-    // Support string filters like "neq.abc" by leaving them untouched
     if (typeof v === 'string' && /^(eq|neq|gt|gte|lt|lte|like|ilike|is)\./.test(v)) {
       params.set(k, v);
     } else {
@@ -404,6 +489,23 @@ async function sbInsert(table, row) {
   });
   if (!resp.ok) {
     throw new Error(table + ' insert failed: ' + resp.status + ' ' + await resp.text());
+  }
+  const rows = await resp.json();
+  return rows?.[0] || null;
+}
+
+async function sbUpdate(table, filter, patch) {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(filter)) {
+    params.set(k, 'eq.' + v);
+  }
+  const resp = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?' + params.toString(), {
+    method: 'PATCH',
+    headers: { ...authHeaders(), 'Prefer': 'return=representation' },
+    body: JSON.stringify(patch),
+  });
+  if (!resp.ok) {
+    throw new Error(table + ' update failed: ' + resp.status + ' ' + await resp.text());
   }
   const rows = await resp.json();
   return rows?.[0] || null;
@@ -491,16 +593,60 @@ function clearFormStatus() {
   el.textContent = '';
 }
 
+const subs = ['dashboard', 'form', 'detail'];
+function showSubView(name) {
+  subs.forEach(s => {
+    const el = document.getElementById('sub-' + s);
+    if (el) el.classList.toggle('hidden', s !== name);
+  });
+}
+
 function showDashboardView() {
-  document.getElementById('sub-dashboard').classList.remove('hidden');
-  document.getElementById('sub-form').classList.add('hidden');
+  currentDetailId = null;
+  formMode = 'new';
+  formEditId = null;
+  showSubView('dashboard');
   clearFormStatus();
 }
+
 function showFormView() {
-  document.getElementById('sub-dashboard').classList.add('hidden');
-  document.getElementById('sub-form').classList.remove('hidden');
+  // "new" mode — blank form
+  formMode = 'new';
+  formEditId = null;
+  resetFormFields();
+  setFormMode('new');
+  showSubView('form');
   clearFormStatus();
   window.scrollTo(0, 0);
+}
+
+function setFormMode(mode, project) {
+  // mode: 'new' | 'edit'
+  formMode = mode;
+  const title = document.getElementById('form-title');
+  const subtitle = document.getElementById('form-subtitle');
+  const btn = document.getElementById('btn-submit-request');
+  if (mode === 'edit') {
+    title.textContent = 'Edit submission';
+    subtitle.textContent = 'Changes update your submission in place.';
+    btn.textContent = 'Save changes';
+  } else {
+    title.textContent = 'Submit a request';
+    subtitle.textContent = "All fields feed the product team's review.";
+    btn.textContent = 'Submit request';
+  }
+}
+
+function cancelForm() {
+  // If we're editing, go back to detail view. Otherwise back to dashboard.
+  if (formMode === 'edit' && formEditId) {
+    const id = formEditId;
+    formMode = 'new';
+    formEditId = null;
+    showDetailView(id);
+  } else {
+    showDashboardView();
+  }
 }
 
 function toast(msg) {
@@ -532,6 +678,24 @@ function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  try { return new Date(iso).toLocaleDateString(); } catch { return ''; }
+}
+
+/** Normalize an arbitrary status string into a CSS class suffix. */
+function statusClass(status) {
+  const s = (status || 'Submitted').trim();
+  // Map common variants to a compact set of class names
+  if (/^evaluate/i.test(s)) return 'Evaluate';
+  if (/^pursue/i.test(s))   return 'Pursue';
+  if (/^defer/i.test(s))    return 'Defer';
+  if (/^pass/i.test(s))     return 'Pass';
+  if (/^evaluating/i.test(s)) return 'Evaluating';
+  if (/^submitted/i.test(s))  return 'Submitted';
+  return 'Submitted';
 }
 
 /* ============================================================
@@ -750,16 +914,18 @@ function buildCriteriaFields() {
 }
 
 /* ============================================================
- * Submit — real DB write
+ * Submit / Save — unified entry point for new + edit
  * ============================================================ */
 
-async function submitRequest() {
-  clearFormStatus();
-
+/**
+ * Collect + validate form values. Returns { ok, error, payload } where
+ * payload is the partial row object (without workspace_id/created_by/etc).
+ * Only returns ok:true if every validation passes.
+ */
+function collectFormValues() {
   const projectTypeId = document.getElementById('form-project-type').value;
   if (!projectTypeId) {
-    showFormStatus('error', 'Please select a project type.');
-    return;
+    return { ok: false, error: 'Please select a project type.' };
   }
 
   const lockedVals = {};
@@ -767,25 +933,19 @@ async function submitRequest() {
     const el = document.getElementById('df-' + f.id);
     const val = (el?.value || '').trim();
     if (f.required && !val) {
-      showFormStatus('error', 'Missing required field: ' + f.label);
-      return;
+      return { ok: false, error: 'Missing required field: ' + f.label };
     }
     lockedVals[f.id] = val;
   }
 
   const detailVals = {};
-  let detailError = null;
-  (workspaceConfig?.detail_fields || []).forEach(f => {
+  for (const f of (workspaceConfig?.detail_fields || [])) {
     const el = document.getElementById('df-' + f.id);
     const val = (el?.value || '').trim();
-    if (f.required && !val && !detailError) {
-      detailError = 'Missing required field: ' + f.label;
+    if (f.required && !val) {
+      return { ok: false, error: 'Missing required field: ' + f.label };
     }
     detailVals[f.id] = val;
-  });
-  if (detailError) {
-    showFormStatus('error', detailError);
-    return;
   }
 
   const criteriaVals = {};
@@ -806,54 +966,94 @@ async function submitRequest() {
     criteriaVals[c.id] = opt.score;
   });
   if (missing.length) {
-    showFormStatus('error', 'Please answer all criteria: ' + missing.join(', '));
-    return;
+    return { ok: false, error: 'Please answer all criteria: ' + missing.join(', ') };
   }
 
   const score = computeScore(criteriaVals);
   const tier = getTier(score);
-
   const projectTypeMapping = (workspaceConfig?.project_type_mappings || []).find(pt => pt.id === projectTypeId);
-  const row = {
-    workspace_id: WORKSPACE_ID,
-    created_by: currentUser.id,
-    name: lockedVals['__name__'],
-    status: 'Submitted',
-    score: score,
-    tier: tier,
-    criteria_vals: criteriaVals,
-    criteria_snapshot: {
-      criteria: workspaceConfig.criteria,
-      weights: workspaceConfig.weights,
-      tier_thresholds: workspaceConfig.tier_thresholds,
+
+  return {
+    ok: true,
+    payload: {
+      name: lockedVals['__name__'],
+      score: score,
+      tier: tier,
+      criteria_vals: criteriaVals,
+      criteria_snapshot: {
+        criteria: workspaceConfig.criteria,
+        weights: workspaceConfig.weights,
+        tier_thresholds: workspaceConfig.tier_thresholds,
+      },
+      locked_vals: lockedVals,
+      detail_vals: detailVals,
+      project_type: projectTypeMapping?.label || '',
+      project_type_id: projectTypeId,
     },
-    locked_vals: lockedVals,
-    detail_vals: detailVals,
-    project_type: projectTypeMapping?.label || '',
-    project_type_id: projectTypeId,
-    submitter_email: currentUser.email,
-    is_sample: false,
   };
+}
+
+async function submitForm() {
+  clearFormStatus();
+  const result = collectFormValues();
+  if (!result.ok) {
+    showFormStatus('error', result.error);
+    return;
+  }
 
   const btn = document.getElementById('btn-submit-request');
+  const originalText = btn.textContent;
   btn.disabled = true;
-  btn.textContent = 'Submitting…';
+  btn.textContent = (formMode === 'edit') ? 'Saving…' : 'Submitting…';
 
   try {
-    const saved = await sbInsert('projects', row);
-    if (!saved) throw new Error('Insert returned no row');
-
-    toast('Request submitted!');
-    showDashboardView();
+    if (formMode === 'edit') {
+      // Update existing row — preserve status/notes/revisit that PM may have set
+      await sbUpdate('projects', { id: formEditId }, result.payload);
+      toast('Changes saved.');
+      const editedId = formEditId;
+      formMode = 'new';
+      formEditId = null;
+      await renderSubmissionsList();
+      // Return to detail view with fresh data
+      showDetailView(editedId);
+    } else {
+      // New submission
+      const row = {
+        ...result.payload,
+        workspace_id: WORKSPACE_ID,
+        created_by: currentUser.id,
+        status: 'Submitted',
+        submitter_email: currentUser.email,
+        is_sample: false,
+      };
+      const saved = await sbInsert('projects', row);
+      if (!saved) throw new Error('Insert returned no row');
+      toast('Request submitted!');
+      showDashboardView();
+      await renderSubmissionsList();
+      resetFormFields();
+    }
     btn.disabled = false;
-    btn.textContent = 'Submit request';
-    await renderSubmissionsList();
-    resetFormFields();
+    btn.textContent = originalText;
   } catch (err) {
-    console.error('[Portal] Submit failed:', err);
-    showFormStatus('error', 'Submission failed: ' + (err.message || 'please try again'));
+    console.error('[Portal] Submit/save failed:', err);
+    const msg = err.message || 'please try again';
+    // If the PATCH failed because RLS blocked it (status moved past
+    // Submitted), give a helpful message instead of a raw error.
+    if (formMode === 'edit' && /404|403/.test(msg)) {
+      showFormStatus('error', "This submission is no longer editable — its status has changed. Refreshing the list…");
+      setTimeout(() => {
+        formMode = 'new';
+        formEditId = null;
+        showDashboardView();
+        renderSubmissionsList();
+      }, 1600);
+    } else {
+      showFormStatus('error', (formMode === 'edit' ? 'Save failed: ' : 'Submission failed: ') + msg);
+    }
     btn.disabled = false;
-    btn.textContent = 'Submit request';
+    btn.textContent = originalText;
   }
 }
 
@@ -866,7 +1066,7 @@ function resetFormFields() {
   LOCKED_FIELDS.forEach(f => {
     const el = document.getElementById('df-' + f.id);
     if (!el) return;
-    if (f.id === '__email__') return; // keep pre-filled
+    if (f.id === '__email__') return;
     el.value = '';
   });
   (workspaceConfig?.detail_fields || []).forEach(f => {
@@ -876,12 +1076,74 @@ function resetFormFields() {
   buildCriteriaFields();
 }
 
+/** Populate the form with values from an existing project (edit mode). */
+function populateFormForEdit(project) {
+  // Project type first so criteria are rebuilt
+  const ptSel = document.getElementById('form-project-type');
+  if (ptSel && project.project_type_id) {
+    ptSel.value = project.project_type_id;
+    onProjectTypeChange(project.project_type_id);
+  }
+
+  // Locked + detail fields
+  const locked = project.locked_vals || {};
+  LOCKED_FIELDS.forEach(f => {
+    const el = document.getElementById('df-' + f.id);
+    if (!el) return;
+    if (f.id === '__email__') {
+      // Email always stays at the auth user's value (can't submit as someone else)
+      el.value = currentUser?.email || locked[f.id] || '';
+      el.readOnly = true;
+    } else {
+      el.value = locked[f.id] || '';
+    }
+  });
+
+  const details = project.detail_vals || {};
+  (workspaceConfig?.detail_fields || []).forEach(f => {
+    const el = document.getElementById('df-' + f.id);
+    if (el) el.value = details[f.id] || '';
+  });
+
+  // Criteria — map stored scores back to option indices
+  const criteriaVals = project.criteria_vals || {};
+  getActiveCriteria().forEach(c => {
+    const el = document.getElementById('dd-' + c.id);
+    if (!el) return;
+    const storedScore = criteriaVals[c.id];
+    if (storedScore === undefined || storedScore === null) return;
+    const idx = (c.options || []).findIndex(opt => opt.score === storedScore);
+    if (idx >= 0) el.value = String(idx);
+  });
+}
+
+function startEdit() {
+  const project = submissionsCache.find(p => p.id === currentDetailId);
+  if (!project) return;
+  if ((project.status || 'Submitted') !== 'Submitted') {
+    toast('This submission can no longer be edited.');
+    return;
+  }
+  formEditId = project.id;
+  setFormMode('edit');
+  // Build fields from current config, then populate with project values
+  buildProjectTypeSelect();
+  buildDetailFields();
+  buildCriteriaFields();
+  populateFormForEdit(project);
+  showSubView('form');
+  clearFormStatus();
+  window.scrollTo(0, 0);
+}
+
 /* ============================================================
- * Submissions list
+ * Submissions list + detail view + filters + summary
  * ============================================================ */
 
 async function renderSubmissionsList() {
   const container = document.getElementById('submissions-list');
+  const summaryBar = document.getElementById('dashboard-summary');
+  const filterBar = document.getElementById('dashboard-filters');
   if (!container || !currentUser) return;
 
   try {
@@ -892,40 +1154,279 @@ async function renderSubmissionsList() {
         submitter_email: currentUser.email,
         deleted_at: 'is.null',
       },
-      'id,name,status,created_at,locked_vals',
+      'id,name,status,created_at,locked_vals,detail_vals,criteria_vals,project_type,project_type_id,decision_notes,revisit_date,criteria_snapshot',
       'created_at.desc'
     );
+    submissionsCache = rows || [];
 
-    if (!rows || rows.length === 0) {
+    if (submissionsCache.length === 0) {
       container.innerHTML = '<div class="empty-state">You have no submissions yet.<br>Click <strong>+ Submit a request</strong> to send one in.</div>';
+      summaryBar.classList.add('hidden');
+      filterBar.classList.add('hidden');
       return;
     }
 
-    container.innerHTML = '';
-    rows.forEach(r => {
-      const div = document.createElement('div');
-      div.className = 'section';
-      div.style.padding = '0.85rem 1rem';
-      div.style.marginBottom = '0.5rem';
-      const customer = r.locked_vals?.__customer__ || '—';
-      const date = r.created_at ? new Date(r.created_at).toLocaleDateString() : '';
-      div.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;">
-          <div>
-            <div style="font-size:14px;font-weight:500;">${escapeHtml(r.name)}</div>
-            <div style="font-size:12px;color:#888;margin-top:2px;">${escapeHtml(customer)} · ${date}</div>
-          </div>
-          <div style="font-size:11px;font-weight:600;color:#555;padding:4px 10px;background:#fafaf9;border-radius:6px;border:1px solid #e5e5e5;">
-            ${escapeHtml(r.status || 'Submitted')}
-          </div>
-        </div>
-      `;
-      container.appendChild(div);
-    });
+    // Populate filter status options from distinct statuses seen
+    populateStatusFilter(submissionsCache);
+    // Render summary counts
+    renderSummary(submissionsCache);
+    // Show bars
+    summaryBar.classList.remove('hidden');
+    filterBar.classList.remove('hidden');
+
+    applyListFilters();
   } catch (err) {
     console.error('[Portal] renderSubmissionsList failed:', err);
     container.innerHTML = '<div class="empty-state" style="color:#a72020;">Couldn\'t load your submissions. Try refreshing.</div>';
+    summaryBar.classList.add('hidden');
+    filterBar.classList.add('hidden');
   }
+}
+
+function populateStatusFilter(rows) {
+  const sel = document.getElementById('filter-status');
+  if (!sel) return;
+  const currentValue = sel.value;
+  const distinct = Array.from(new Set(rows.map(r => r.status || 'Submitted'))).sort();
+  sel.innerHTML = '<option value="">All</option>';
+  distinct.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = s;
+    sel.appendChild(opt);
+  });
+  // Preserve previously-selected filter if still valid
+  if (currentValue && distinct.includes(currentValue)) {
+    sel.value = currentValue;
+  }
+}
+
+function renderSummary(rows) {
+  const container = document.getElementById('dashboard-summary');
+  if (!container) return;
+  const counts = {};
+  rows.forEach(r => {
+    const s = r.status || 'Submitted';
+    counts[s] = (counts[s] || 0) + 1;
+  });
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  container.innerHTML = '<span style="font-size:12px;color:#888;margin-right:4px;">'
+    + rows.length + ' total · </span>'
+    + entries.map(([s, n]) =>
+        `<span class="summary-count"><strong>${n}</strong> ${escapeHtml(s)}</span>`
+      ).join('');
+}
+
+/** Apply the current filter + sort selections to submissionsCache and re-render. */
+function applyListFilters() {
+  const container = document.getElementById('submissions-list');
+  if (!container) return;
+
+  const statusFilter = document.getElementById('filter-status').value;
+  const sortMode = document.getElementById('filter-sort').value;
+
+  let filtered = submissionsCache.slice();
+  if (statusFilter) {
+    filtered = filtered.filter(r => (r.status || 'Submitted') === statusFilter);
+  }
+
+  if (sortMode === 'oldest') {
+    filtered.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+  } else if (sortMode === 'status') {
+    filtered.sort((a, b) => (a.status || '').localeCompare(b.status || ''));
+  } else {
+    // newest (default) — API already returns this way, but re-sort for safety
+    filtered.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state">No submissions match the current filter.</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  filtered.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'submission-row';
+    div.setAttribute('role', 'button');
+    div.setAttribute('tabindex', '0');
+    div.dataset.id = r.id;
+    const customer = r.locked_vals?.__customer__ || '—';
+    const date = fmtDate(r.created_at);
+    const status = r.status || 'Submitted';
+    const sCls = statusClass(status);
+    div.innerHTML = `
+      <div class="row-inner">
+        <div>
+          <div class="row-name">${escapeHtml(r.name)}</div>
+          <div class="row-sub">${escapeHtml(customer)} · ${date}</div>
+        </div>
+        <div class="status-badge status-${escapeHtml(sCls)}">${escapeHtml(status)}</div>
+      </div>
+    `;
+    div.addEventListener('click', () => showDetailView(r.id));
+    div.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        showDetailView(r.id);
+      }
+    });
+    container.appendChild(div);
+  });
+}
+
+/* ============================================================
+ * Detail view
+ * ============================================================ */
+
+function showDetailView(projectId) {
+  const p = submissionsCache.find(r => r.id === projectId);
+  if (!p) {
+    toast('Submission not found — refreshing list.');
+    renderSubmissionsList();
+    return;
+  }
+  currentDetailId = projectId;
+  buildDetailViewDOM(p);
+  showSubView('detail');
+  window.scrollTo(0, 0);
+}
+
+function buildDetailViewDOM(p) {
+  const title = document.getElementById('detail-title');
+  const subtitle = document.getElementById('detail-subtitle');
+  title.textContent = p.name || 'Submission';
+  const customer = p.locked_vals?.__customer__ || '';
+  const date = fmtDate(p.created_at);
+  subtitle.textContent = (customer ? customer + ' · ' : '') + 'Submitted ' + date;
+
+  const status = p.status || 'Submitted';
+  const sCls = statusClass(status);
+
+  // Edit button: visible only while status === 'Submitted'
+  const editBtn = document.getElementById('detail-edit-btn');
+  if (status === 'Submitted') {
+    editBtn.classList.remove('hidden');
+  } else {
+    editBtn.classList.add('hidden');
+  }
+
+  // --- Status section ---
+  const statusBody = document.getElementById('detail-status-body');
+  const decisionNotes = (p.decision_notes || '').trim();
+  const revisit = p.revisit_date ? fmtDate(p.revisit_date) : '';
+  let statusHtml = `
+    <div class="detail-header-row" style="margin-bottom:${(decisionNotes || revisit) ? '1rem' : '0'};">
+      <div class="detail-kv" style="margin-bottom:0;">
+        <div class="k">Current status</div>
+        <div class="v"><span class="status-badge status-${escapeHtml(sCls)}">${escapeHtml(status)}</span></div>
+      </div>
+    </div>
+  `;
+  if (decisionNotes) {
+    statusHtml += `
+      <div class="detail-kv">
+        <div class="k">PM notes</div>
+        <div class="v">${escapeHtml(decisionNotes)}</div>
+      </div>
+    `;
+  }
+  if (revisit) {
+    statusHtml += `
+      <div class="detail-kv">
+        <div class="k">Revisit date</div>
+        <div class="v">${escapeHtml(revisit)}</div>
+      </div>
+    `;
+  }
+  statusBody.innerHTML = statusHtml;
+
+  // --- Project type section ---
+  const ptBody = document.getElementById('detail-projecttype-body');
+  const ptLabel = p.project_type || '(not set)';
+  ptBody.innerHTML = `
+    <div class="detail-kv">
+      <div class="k">Type</div>
+      <div class="v ${p.project_type ? '' : 'empty'}">${escapeHtml(ptLabel)}</div>
+    </div>
+  `;
+
+  // --- Project details section: locked + detail fields ---
+  const detailsBody = document.getElementById('detail-details-body');
+  const locked = p.locked_vals || {};
+  const details = p.detail_vals || {};
+  const detailFieldsConfig = (workspaceConfig?.detail_fields || []);
+
+  let detailsHtml = '';
+  LOCKED_FIELDS.forEach(f => {
+    const v = locked[f.id] || '';
+    detailsHtml += `
+      <div class="detail-kv">
+        <div class="k">${escapeHtml(f.label)}</div>
+        <div class="v ${v ? '' : 'empty'}">${v ? escapeHtml(v) : '(not provided)'}</div>
+      </div>
+    `;
+  });
+  detailFieldsConfig.forEach(f => {
+    const v = details[f.id] || '';
+    detailsHtml += `
+      <div class="detail-kv">
+        <div class="k">${escapeHtml(f.label)}</div>
+        <div class="v ${v ? '' : 'empty'}">${v ? escapeHtml(v) : '(not provided)'}</div>
+      </div>
+    `;
+  });
+  detailsBody.innerHTML = detailsHtml || '<div style="font-size:13px;color:#aaa;">No detail fields.</div>';
+
+  // --- Criteria section ---
+  // Show each criterion with the rep's picked OPTION LABEL (not score).
+  // Use criteria_snapshot if present (preserves config at submission time)
+  // and fall back to current workspace config otherwise.
+  const critBody = document.getElementById('detail-criteria-body');
+  const snapshot = p.criteria_snapshot;
+  const criteriaDef = (snapshot?.criteria && Array.isArray(snapshot.criteria))
+    ? snapshot.criteria
+    : (workspaceConfig?.criteria || []);
+  const picked = p.criteria_vals || {};
+
+  // Filter to the criteria active for this project type (using whatever
+  // config was active at submission time). If no mapping info survives,
+  // fall back to all criteria.
+  let criteriaToShow = criteriaDef;
+  // project_type_mappings usually live only in current config, not in snapshot,
+  // so if we have a current config and a project_type_id, prefer that filter.
+  if (workspaceConfig?.project_type_mappings && p.project_type_id) {
+    const map = workspaceConfig.project_type_mappings.find(pt => pt.id === p.project_type_id);
+    if (map?.activeCriteriaIds?.length) {
+      criteriaToShow = criteriaDef.filter(c => map.activeCriteriaIds.includes(c.id));
+    }
+  }
+
+  if (criteriaToShow.length === 0) {
+    critBody.innerHTML = '<div style="font-size:13px;color:#aaa;">No criteria to display.</div>';
+    return;
+  }
+
+  let critHtml = '';
+  criteriaToShow.forEach(c => {
+    const storedScore = picked[c.id];
+    let pickedLabel = '(not answered)';
+    let pickedEmpty = true;
+    if (storedScore !== undefined && storedScore !== null) {
+      const opt = (c.options || []).find(o => o.score === storedScore);
+      if (opt) {
+        pickedLabel = opt.label;
+        pickedEmpty = false;
+      }
+    }
+    critHtml += `
+      <div class="detail-kv">
+        <div class="k">${escapeHtml(c.label)}</div>
+        <div class="v ${pickedEmpty ? 'empty' : ''}">${escapeHtml(pickedLabel)}</div>
+      </div>
+    `;
+  });
+  critBody.innerHTML = critHtml;
 }
 
 /* ============================================================
@@ -933,7 +1434,6 @@ async function renderSubmissionsList() {
  * ============================================================ */
 
 async function init() {
-  // Callback from magic link?
   if (window.location.hash.includes('access_token=')) {
     showView('loading');
     const session = parseCallbackFromUrl();
@@ -945,7 +1445,6 @@ async function init() {
     cleanUrlHash();
   }
 
-  // Resume from storage if we didn't just get a callback
   if (!currentSession) {
     const stored = getStoredSession();
     if (stored) {
@@ -959,7 +1458,7 @@ async function init() {
     if (emailInline) emailInline.textContent = currentUser.email || '(no email)';
 
     showView('signed-in');
-    showDashboardView();
+    showSubView('dashboard');
 
     const [config] = await Promise.all([
       loadWorkspaceConfig(),
@@ -970,6 +1469,12 @@ async function init() {
       buildProjectTypeSelect();
       buildDetailFields();
       buildCriteriaFields();
+      // Re-render list to pick up any workspace-dependent column filters
+      // (e.g. project_type_mappings affecting criteria display — only
+      // matters if you open detail before config loads).
+      if (!document.getElementById('sub-detail').classList.contains('hidden')) {
+        // unlikely at init, but harmless
+      }
     } else {
       console.warn('[Portal] workspace_config unavailable; form will be empty');
     }
