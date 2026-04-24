@@ -256,9 +256,17 @@
 
 <script>
 /* ============================================================
- * Arbiter Portal — v0.4.1
+ * Arbiter Portal — v0.4.2
  *
- * B.3 redesign to match admin tracker visual language:
+ * v0.4.2 (Phase 3 Step C.2): pre-auth rep check.
+ *   Before sending a magic-link OTP, the portal queries the reps
+ *   table anonymously (via migration 004's reps_anon_auth_check
+ *   policy) to verify the email is an active rep. Non-reps get
+ *   the same "Check your email" UX as reps, but no email is sent.
+ *   Timing-equalizing 500ms delay on the unauthorized path to
+ *   mitigate side-channel probes.
+ *
+ * v0.4.1: B.3 redesign to match admin tracker visual language:
  *   - Flat .project-row list (not card rows)
  *   - .status-filter-bar chips with per-status counts
  *   - 3 .metric-card summary (Total, This month, Deferred)
@@ -272,8 +280,8 @@
  * Raw-fetch architecture unchanged from v0.3.0+: no Supabase JS client.
  * ============================================================ */
 
-const VERSION = '0.4.1';
-const BUILD_STAMP = '2026-04-23 08:07:59 PM EST';
+const VERSION = '0.4.2';
+const BUILD_STAMP = '2026-04-24 09:14:28 AM EST';
 
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
@@ -362,6 +370,35 @@ async function sendOtp(email, redirectTo) {
     throw new Error('OTP request failed: ' + resp.status + ' ' + body);
   }
   return true;
+}
+
+/**
+ * Check whether an email is authorized to sign in to this workspace — i.e.,
+ * is registered in the reps table with is_active=true. Runs as an
+ * unauthenticated anonymous request against Supabase REST; relies on
+ * the reps_anon_auth_check policy (migration 004) that lets anon users
+ * read active reps for existence checks.
+ *
+ * Returns true only when the lookup succeeds AND finds an active rep.
+ * Any error (network failure, unexpected response shape, etc.) is
+ * treated as "not authorized" — fail closed.
+ */
+async function isAuthorizedEmail(email) {
+  try {
+    const url = SUPABASE_URL + '/rest/v1/reps'
+      + '?workspace_id=eq.' + encodeURIComponent(WORKSPACE_ID)
+      + '&email=eq.' + encodeURIComponent(email.toLowerCase())
+      + '&is_active=eq.true'
+      + '&select=id';
+    const resp = await fetch(url, {
+      headers: { 'apikey': SUPABASE_PUBLISHABLE_KEY },
+    });
+    if (!resp.ok) return false;
+    const rows = await resp.json();
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 function parseCallbackFromUrl() {
@@ -673,7 +710,21 @@ async function sendMagicLink() {
 
   try {
     const redirectTo = window.location.origin + window.location.pathname;
-    await sendOtp(email, redirectTo);
+    // Check rep authorization BEFORE sending the OTP. Non-reps get the
+    // same "Check your email" UX, but no email is sent and no session is
+    // ever created for them. We intentionally don't surface the check's
+    // result — an attacker probing specific emails can't tell the
+    // difference between "email sent" and "silently blocked" from the UI.
+    // Timing-equalizing delay below helps with side-channel timing probes.
+    const authorized = await isAuthorizedEmail(email);
+    if (authorized) {
+      await sendOtp(email, redirectTo);
+    } else {
+      // Burn comparable time so the unauthorized path isn't distinguishable
+      // by stopwatch. sendOtp typically takes 300-800ms; 500ms is a fair
+      // middle ground without being gratuitously slow.
+      await new Promise(r => setTimeout(r, 500));
+    }
     document.getElementById('sent-email').textContent = email;
     showView('link-sent');
   } catch (err) {
