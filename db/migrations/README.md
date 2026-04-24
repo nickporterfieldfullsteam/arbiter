@@ -36,6 +36,8 @@ project. They are applied in numeric order.
 |---|------|---------|---------|
 | 001 | `001-phase3-step-a-initial-rls.sql` | 2026-04-19 | Added `submitter_email` column, `reps` table, initial RLS policies on `projects` and `reps`, permissive SELECT on `workspace_config`. |
 | 002 | `002-phase3-step-a-cleanup.sql` | 2026-04-19 | Consolidated overlapping policies, preserved `pm` role alongside `admin`, fixed silent bug in `workspace_config` write policy, tightened portal SELECT to scope by workspace membership or active rep. |
+| 003a | `003a-phase3-backfill-submitter-email.sql` | 2026-04-23 | Re-backfilled `submitter_email` column from `locked_vals->>'__email__'` for 18 rows that accumulated after migration 001's one-time backfill. Prerequisite for 003. Root cause: main app's `sbUpsertProject` only wrote email to JSONB, not to the dedicated column. Paired with main app v1.9.8 which now mirrors both. |
+| 003 | `003-phase3-step-c-rep-enforcement.sql` | 2026-04-23 | Active-rep enforcement: `projects` INSERT/UPDATE now require the submitter to be an active rep (`reps.is_active = true`) in the workspace, with admin/pm bypass preserved. Backfilled 9 active reps from existing submitters. Added `reps_workspace_email_unique` index (also prevents future duplicates). |
 
 When you apply a new migration, update this table with the date and a
 one-line summary. The point isn't bureaucracy — it's so future-you (or a
@@ -53,6 +55,25 @@ automatically and leave your DB untouched. Your options:
    auto-executed, so you have to copy/paste into the SQL editor.
 3. **If the rollback also breaks things:** restore from a Supabase DB
    backup. Dashboard → Database → Backups.
+
+## Known gotchas
+
+### Migration 003: ON CONFLICT requires the unique index
+
+The backfill INSERT in migration 003 uses `ON CONFLICT DO NOTHING`. This
+requires a unique index on `reps(workspace_id, lower(email))`. During the
+original apply on 2026-04-23, the index didn't yet exist, and Postgres
+silently no-op'd every INSERT row without throwing an error. The policy
+changes committed but no reps were backfilled.
+
+Recovery: manually ran the INSERT without the ON CONFLICT clause. The
+file in this repo has since been corrected to create the unique index
+at the top of the transaction, ahead of the INSERT, so future runs work.
+If you ever need to re-apply 003 (e.g., on a fresh DB for dev), the
+updated file does the right thing.
+
+Lesson: if you write `ON CONFLICT` in future migrations, verify the
+underlying unique constraint exists — or create it in the same migration.
 
 ## Philosophy
 

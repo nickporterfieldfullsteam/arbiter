@@ -1596,8 +1596,8 @@
 </footer>
 
 <script>
-const VERSION = '1.9.7';
-const BUILD_STAMP = '2026-04-19 09:47:28 AM EST';
+const VERSION = '1.9.8';
+const BUILD_STAMP = '2026-04-23 08:42:23 PM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1786,6 +1786,13 @@ async function loadProjects() {
 async function sbUpsertProject(proj) {
   if (!currentWorkspaceId) { console.error('[Arbiter] No workspace ID — cannot save project'); return proj; }
   if (!currentUser) { console.error('[Arbiter] No current user — cannot save project'); return proj; }
+  // Mirror the submitter email from locked_vals JSONB into the dedicated
+  // submitter_email column. Historically only JSONB was written; migration
+  // 001 added the column + backfilled existing rows; migration 003a re-
+  // backfilled drift; going forward this keeps them in lockstep. RLS policy
+  // as of migration 003 reads the column, not the JSONB, so this must stay
+  // populated for the submitter's own edits to work.
+  const jsonbEmail = (proj.lockedVals && proj.lockedVals['__email__']) || '';
   const row = {
     workspace_id: currentWorkspaceId,
     created_by: currentUser?.id,
@@ -1802,7 +1809,8 @@ async function sbUpsertProject(proj) {
     decision_notes: proj.decisionNotes || '',
     revisit_date: proj.revisitDate || null,
     previous_score: proj.previousScore || null,
-    is_sample: proj.isSample || false
+    is_sample: proj.isSample || false,
+    submitter_email: jsonbEmail ? jsonbEmail.toLowerCase() : null,
   };
   // Allow callers to pin the creation timestamp (e.g. the sample generator,
   // which backdates samples so they don't all appear as "today"). Regular
