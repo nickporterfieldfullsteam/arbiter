@@ -6,19 +6,17 @@ import { reloadAndWaitForInit } from '../helpers/auth';
 /**
  * Intake notes persistence test.
  *
- * Regression coverage for a bug where typing into the notes textarea and
- * clicking Save did nothing — the textarea used `onchange` which only fires
- * on blur, so clicking Save directly never captured the draft value.
- * Fixed by switching to `oninput`.
+ * Notes are stored in the project_notes table. Each note is an instant-save
+ * INSERT triggered by pressing Enter in the notes textarea (Shift+Enter
+ * inserts a newline).
  *
  * This test verifies:
- *   1. Typing notes alone (no status change) enables the Save button.
- *   2. Clicking Save persists the notes to Supabase.
- *   3. After reload, the notes are still present in the DB and in the UI.
+ *   1. Pressing Enter in the notes input persists to project_notes.
+ *   2. After reload, the note appears in the notes log.
+ *   3. The same flow works from the Kanban modal.
  */
 test.describe('Intake notes persistence', () => {
-  test('Notes-only change persists to Supabase without a status change', async ({ authedPage }) => {
-    // Create a project via the scorecard form
+  test('Note added via inline panel persists to Supabase', async ({ authedPage }) => {
     await createProject(authedPage, {
       name: 'Notes persist test',
       customer: 'Test Co',
@@ -26,11 +24,8 @@ test.describe('Intake notes persistence', () => {
       email: 'test@example.com',
     });
 
-    // Confirm clean initial state
     const before = await getProjectByName('Notes persist test');
     expect(before).not.toBeNull();
-    expect(before.decision_notes).toBeFalsy();
-
     const projectId = before.id;
 
     // Navigate to Intake tab and expand the project's inline detail panel
@@ -38,43 +33,32 @@ test.describe('Intake notes persistence', () => {
     await authedPage.locator('#proj-row-' + projectId).click();
     await expect(authedPage.locator('#proj-detail-' + projectId)).toBeVisible();
 
-    // Type into the notes textarea (inside the inline detail panel)
-    const notesTextarea = authedPage.locator(
-      `#proj-detail-${projectId} textarea`
-    ).first();
-    await expect(notesTextarea).toBeVisible();
-    await notesTextarea.fill('Approved by leadership. Ship in Q3.');
+    // Wait for notes log to render (async load)
+    const notesContainer = authedPage.locator('#notes-log-inline-' + projectId);
+    await expect(notesContainer).toBeVisible();
+    await expect(notesContainer.locator('textarea')).toBeVisible({ timeout: 5000 });
 
-    // Save button should be enabled (draft is dirty from notes alone)
-    const saveBtn = authedPage.locator(
-      `button[data-draft-save="${projectId}"]`
-    ).first();
-    await expect(saveBtn).toBeEnabled();
-    await saveBtn.click();
+    // Type a note and press Enter to submit
+    await notesContainer.locator('textarea').fill('Approved by leadership. Ship in Q3.');
+    await notesContainer.locator('textarea').press('Enter');
 
-    // Allow the async sbUpdateProjectField call to complete
-    await authedPage.waitForTimeout(500);
+    // Wait for toast confirming the note was added
+    await expect(authedPage.locator('#toast')).toContainText('Note added', { timeout: 5000 });
 
-    // Verify DB has the notes
-    const after = await getProjectByName('Notes persist test');
-    expect(after).not.toBeNull();
-    expect(after.decision_notes).toBe('Approved by leadership. Ship in Q3.');
-    // Status should be unchanged
-    expect(after.status).toBe('Submitted');
+    // The note should now appear in the notes log
+    await expect(notesContainer).toContainText('Approved by leadership. Ship in Q3.');
 
-    // Reload and verify notes survive
+    // Reload and verify note survives
     await reloadAndWaitForInit(authedPage);
     await authedPage.locator('#tab-btn-tracker').click();
     await authedPage.locator('#proj-row-' + projectId).click();
     await expect(authedPage.locator('#proj-detail-' + projectId)).toBeVisible();
 
-    const notesAfterReload = authedPage.locator(
-      `#proj-detail-${projectId} textarea`
-    ).first();
-    await expect(notesAfterReload).toHaveValue('Approved by leadership. Ship in Q3.');
+    const notesAfterReload = authedPage.locator('#notes-log-inline-' + projectId);
+    await expect(notesAfterReload).toContainText('Approved by leadership. Ship in Q3.', { timeout: 5000 });
   });
 
-  test('Notes change via Kanban modal persists to Supabase', async ({ authedPage }) => {
+  test('Note added via Kanban modal persists to Supabase', async ({ authedPage }) => {
     await createProject(authedPage, {
       name: 'Kanban notes test',
       customer: 'Test Co',
@@ -91,24 +75,19 @@ test.describe('Intake notes persistence', () => {
     await expect(authedPage.locator('.kanban-board')).toBeVisible();
     await authedPage.locator(`.kanban-card[data-id="${projectId}"]`).click();
 
-    // Type into the notes textarea inside the modal
-    const modalNotes = authedPage.locator(`.modal-overlay textarea`).first();
+    // Wait for notes log to render inside the modal
+    const modalNotes = authedPage.locator(`#notes-log-modal-${projectId}`);
     await expect(modalNotes).toBeVisible();
-    await modalNotes.fill('Deferred pending Q4 budget review.');
+    await expect(modalNotes.locator('textarea')).toBeVisible({ timeout: 5000 });
 
-    // Save via the modal's Save button
-    const modalSave = authedPage.locator(
-      `.modal-overlay button[data-draft-save="${projectId}"]`
-    );
-    await expect(modalSave).toBeEnabled();
-    await modalSave.click();
+    // Type a note and press Enter to submit
+    await modalNotes.locator('textarea').fill('Deferred pending Q4 budget review.');
+    await modalNotes.locator('textarea').press('Enter');
 
-    await authedPage.waitForTimeout(500);
+    // Wait for toast
+    await expect(authedPage.locator('#toast')).toContainText('Note added', { timeout: 5000 });
 
-    // Verify DB
-    const after = await getProjectByName('Kanban notes test');
-    expect(after).not.toBeNull();
-    expect(after.decision_notes).toBe('Deferred pending Q4 budget review.');
-    expect(after.status).toBe('Submitted');
+    // Note should appear in the modal's log
+    await expect(modalNotes).toContainText('Deferred pending Q4 budget review.');
   });
 });

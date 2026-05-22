@@ -1169,7 +1169,7 @@
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-2-5" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
-                Intake notes textarea saves on change
+                Notes log loads when panel opens; Add note inserts and re-renders
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-2-6" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
@@ -1690,7 +1690,7 @@
 
 <script>
 const VERSION = '1.17.0';
-const BUILD_STAMP = '2026-05-21 10:33:03 PM EST';
+const BUILD_STAMP = '2026-05-22 04:25:10 PM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2471,6 +2471,88 @@ async function sbUpdateProjectField(id, dbField, value) {
   await _sb.from('projects').update({ [dbField]: value }).eq('id', id);
 }
 
+/* ============================================================
+ * PROJECT NOTES — threaded activity log per project
+ * ============================================================ */
+const projectNotesCache = new Map(); // projectId -> [{ id, author_name, author_role, body, created_at }]
+
+async function loadProjectNotes(projectId) {
+  if (!currentWorkspaceId) return [];
+  const { data, error } = await _sb.from('project_notes')
+    .select('id, author_name, author_email, author_role, body, created_at')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false });
+  if (error) { console.warn('[Arbiter] loadProjectNotes error:', error.message); return []; }
+  projectNotesCache.set(projectId, data || []);
+  return data || [];
+}
+
+async function addProjectNote(projectId, body) {
+  if (!body.trim()) return;
+  if (!currentWorkspaceId) return;
+  const authorName = currentUser?.email || 'PM';
+  const { error } = await _sb.from('project_notes').insert({
+    project_id: projectId,
+    workspace_id: currentWorkspaceId,
+    author_name: authorName,
+    author_email: currentUser?.email || null,
+    author_role: 'pm',
+    body: body.trim(),
+  });
+  if (error) { toast('Failed to save note.'); console.error(error); return; }
+  // Refresh cache and re-render all note containers for this project
+  await loadProjectNotes(projectId);
+  document.querySelectorAll(`[data-notes-log="${projectId}"]`).forEach(el => {
+    renderNotesLog(projectId, el.id);
+  });
+  toast('Note added.');
+}
+
+function renderNotesLog(projectId, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const notes = projectNotesCache.get(projectId) || [];
+
+  const inputId = 'note-input-' + containerId;
+
+  container.innerHTML = `
+    <div style="position:relative;margin-bottom:10px;">
+      <textarea id="${inputId}" style="width:100%;font-size:13px;min-height:38px;max-height:120px;font-family:inherit;padding:8px 10px;border:1px solid #ddd;border-radius:8px;resize:vertical;box-sizing:border-box;background:#fff;" placeholder="Add a note… (Enter to save, Shift+Enter for new line)"></textarea>
+    </div>
+    ${notes.length === 0 ? '<p style="font-size:12px;color:#bbb;font-style:italic;margin:0;">No notes yet.</p>' : ''}
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;">
+      ${notes.map(n => {
+        const ts = new Date(n.created_at);
+        const timeStr = ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        const isMe = n.author_email && currentUser?.email && n.author_email.toLowerCase() === currentUser.email.toLowerCase();
+        const authorLabel = isMe ? 'You' : (n.author_name || n.author_email || 'Unknown');
+        const roleBadge = n.author_role === 'rep' ? '<span style="font-size:9px;background:#E8F5E9;color:#2E7D32;border-radius:4px;padding:1px 5px;margin-left:4px;">Rep</span>' :
+                          n.author_role === 'system' ? '<span style="font-size:9px;background:#E3F2FD;color:#1565C0;border-radius:4px;padding:1px 5px;margin-left:4px;">System</span>' : '';
+        return `<div style="padding:8px 10px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;border-left:3px solid #d0d0d0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:11px;font-weight:500;color:#555;">${escapeHtml(authorLabel)}${roleBadge}</span>
+            <span style="font-size:11px;color:#aaa;">${timeStr}</span>
+          </div>
+          <div style="font-size:13px;color:#333;white-space:pre-wrap;">${escapeHtml(n.body)}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // Wire up Enter-to-submit (Shift+Enter for new line)
+  const textarea = document.getElementById(inputId);
+  if (textarea) {
+    textarea.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const val = textarea.value;
+        if (val && val.trim()) {
+          await addProjectNote(projectId, val);
+        }
+      }
+    });
+  }
+}
+
 /**
  * Fire a transactional email notification via the notify Edge Function.
  * Always fire-and-forget at the call site.
@@ -3214,8 +3296,8 @@ function openKanbanCard(id) {
       </div>
 
       <div style="margin-bottom:12px;">
-        <label style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px;">Intake notes</label>
-        <textarea style="font-size:13px;min-height:60px;width:100%;font-family:inherit;padding:8px 10px;border:1px solid #ddd;border-radius:8px;resize:vertical;box-sizing:border-box;" placeholder="Why was this decision made?" oninput="draftUpdateField('${p.id}','decisionNotes',this.value)">${p.decisionNotes||''}</textarea>
+        <label style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px;">Notes</label>
+        <div id="notes-log-modal-${p.id}" data-notes-log="${p.id}"></div>
       </div>
 
       ${lockedRows || detailRows ? `
@@ -3240,6 +3322,8 @@ function openKanbanCard(id) {
   document.body.appendChild(overlay);
   startDraft(p.id);
   refreshDraftUI(p.id);
+  // Load and render notes log in the modal
+  loadProjectNotes(p.id).then(() => renderNotesLog(p.id, 'notes-log-modal-' + p.id));
 
   // Click-outside: confirm-if-dirty before closing
   overlay.addEventListener('click', e => {
@@ -4522,8 +4606,8 @@ function renderProjectList() {
           </div>
         </div>
         <div style="margin-bottom:12px;">
-          <label style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px;">Intake notes</label>
-          <textarea style="font-size:13px;min-height:60px;width:100%;font-family:inherit;padding:8px 10px;border:1px solid #ddd;border-radius:8px;resize:vertical;box-sizing:border-box;" placeholder="Why was this decision made? This can be included in the notification email." oninput="draftUpdateField('${p.id}','decisionNotes',this.value)">${p.decisionNotes||''}</textarea>
+          <label style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px;">Notes</label>
+          <div id="notes-log-inline-${p.id}" data-notes-log="${p.id}"></div>
         </div>
         ${(lockedRows || detailRows) ? `
         <details style="margin-bottom:12px;">
@@ -4628,6 +4712,10 @@ function buildExecutionSection(p, apMode) {
         <label style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px;">Owners</label>
         ${people.length ? `${ownerHiddenInput}<div id="exec-owners-${uid}" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">${ownerChips}${ownerDropdown}</div>` : '<p style="font-size:12px;color:#bbb;font-style:italic;">No people configured yet. Add them in ⚙ → Active Projects config.</p>'}
       </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px;">Notes</label>
+        <div id="notes-log-exec-${uid}" data-notes-log="${p.id}"></div>
+      </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px;">
         <button style="font-family:inherit;font-size:13px;padding:6px 18px;border:1px solid #1a1a1a;border-radius:8px;background:#1a1a1a;color:#fff;cursor:pointer;" onclick="saveExecDraft('${p.id}','${uid}',${apMode ? 'true' : 'false'})">Save changes</button>
       </div>
@@ -4665,7 +4753,14 @@ async function saveExecDraft(projectId, uid, apMode) {
   renderActiveProjects();
   const panel = document.getElementById('ap-detail-' + projectId);
   const chev = document.getElementById('ap-chev-' + projectId);
-  if (panel) { panel.style.display = 'block'; }
+  if (panel) {
+    panel.style.display = 'block';
+    // Re-render notes in the re-built panel
+    const notesContainer = panel.querySelector('[data-notes-log]');
+    if (notesContainer) {
+      loadProjectNotes(projectId).then(() => renderNotesLog(projectId, notesContainer.id));
+    }
+  }
   if (chev) { chev.style.transform = 'rotate(90deg)'; }
   toast('Saved.');
 }
@@ -4735,6 +4830,8 @@ function toggleProjectDetail(id) {
     panel.classList.add('open');
     if (chev) chev.style.transform = 'rotate(180deg)';
     refreshDraftUI(id);
+    // Load and render notes log
+    loadProjectNotes(id).then(() => renderNotesLog(id, 'notes-log-inline-' + id));
   }
 }
 
@@ -4765,7 +4862,8 @@ async function autoSaveThen(projectId, fn) {
  *   - Any place updateProjectStatus / updateProjectField / updateRevisitDate
  *     is called directly outside a draft surface
  *
- * Draft fields tracked: status, decisionNotes, revisitDate.
+ * Draft fields tracked: status, revisitDate. Notes are now handled by
+ * the project_notes table (instant-save per entry, not part of the draft).
  */
 const projectDrafts = new Map(); // projectId -> {baseline, draft}
 
@@ -4777,7 +4875,6 @@ function startDraft(projectId) {
   if (projectDrafts.has(projectId)) return;
   const baseline = {
     status: p.status || 'Submitted',
-    decisionNotes: p.decisionNotes || '',
     revisitDate: p.revisitDate || '',
   };
   projectDrafts.set(projectId, { baseline, draft: { ...baseline } });
@@ -4791,7 +4888,6 @@ function isDraftDirty(projectId) {
   const d = projectDrafts.get(projectId);
   if (!d) return false;
   return d.baseline.status !== d.draft.status
-    || d.baseline.decisionNotes !== d.draft.decisionNotes
     || d.baseline.revisitDate !== d.draft.revisitDate;
 }
 
@@ -4846,11 +4942,6 @@ async function saveDraft(projectId) {
     p.status = d.draft.status;
     sbUpdateProjectField(projectId, 'status', d.draft.status);
     changed.push('status');
-  }
-  if (d.baseline.decisionNotes !== d.draft.decisionNotes) {
-    p.decisionNotes = d.draft.decisionNotes;
-    sbUpdateProjectField(projectId, 'decision_notes', d.draft.decisionNotes);
-    changed.push('decisionNotes');
   }
   if (d.baseline.revisitDate !== d.draft.revisitDate) {
     p.revisitDate = d.draft.revisitDate;
@@ -6241,6 +6332,13 @@ function toggleApDetail(id) {
   const isOpen = panel.style.display !== 'none';
   panel.style.display = isOpen ? 'none' : 'block';
   if (chev) chev.style.transform = isOpen ? '' : 'rotate(90deg)';
+  // Load and render notes when opening
+  if (!isOpen) {
+    const notesContainer = panel.querySelector('[data-notes-log]');
+    if (notesContainer) {
+      loadProjectNotes(id).then(() => renderNotesLog(id, notesContainer.id));
+    }
+  }
 }
 
 /* ── SETTINGS BACKUP ── */
