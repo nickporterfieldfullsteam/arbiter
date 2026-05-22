@@ -15,6 +15,10 @@
       --text-secondary: #888888;
       --text-tertiary: #AAAAAA;
       --col-header-bg: #F0EFEB;
+      --accent: #1A1A1A;
+      --overdue-bg: #FEF2F2;
+      --overdue-border: #FECACA;
+      --overdue-text: #A32D2D;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text-primary); }
@@ -29,23 +33,64 @@
     .header-meta { font-size: 12px; color: var(--text-tertiary); text-align: right; }
 
     /* Filter bar */
-    .filter-bar { padding: 0 32px 16px; display: flex; gap: 8px; flex-wrap: wrap; }
-    .filter-bar select { font-size: 12px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-secondary); font-family: inherit; }
+    .filter-bar { padding: 0 32px 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .filter-bar select { font-size: 12px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text-secondary); font-family: inherit; cursor: pointer; }
+    .filter-bar select:hover { border-color: #ccc; }
+    .filter-clear { font-size: 11px; color: var(--text-tertiary); cursor: pointer; text-decoration: underline; display: none; }
+    .filter-clear:hover { color: var(--text-secondary); }
+
+    /* Summary strip */
+    .summary-strip { padding: 0 32px 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .summary-chip { font-size: 11px; padding: 4px 10px; border-radius: 20px; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px; }
+    .summary-chip .dot { width: 6px; height: 6px; border-radius: 50%; }
 
     /* Board */
     .board { display: flex; gap: 12px; padding: 0 32px 32px; overflow-x: auto; min-height: 300px; }
-    .board-col { flex: 1; min-width: 240px; }
+    .board-col { flex: 1; min-width: 260px; }
     .board-col-header { font-size: 11px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-secondary); padding: 8px 12px; background: var(--col-header-bg); border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
     .board-count { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 1px 7px; font-size: 11px; color: var(--text-tertiary); }
     .board-empty { font-size: 12px; color: var(--text-tertiary); padding: 16px 12px; text-align: center; font-style: italic; }
 
+    /* Progress bar under column header */
+    .col-progress { height: 3px; border-radius: 2px; background: var(--border); margin: -4px 0 8px; overflow: hidden; }
+    .col-progress-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.3s; }
+
     /* Cards */
-    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+    .card:hover { border-color: #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .card.expanded { border-color: #bbb; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
     .card-name { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
     .card-meta { font-size: 11px; color: var(--text-tertiary); margin-bottom: 8px; }
     .card-pills { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
     .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
     .card-eta { font-size: 11px; color: var(--text-secondary); }
+    .card-eta.overdue { color: var(--overdue-text); font-weight: 500; }
+    .card.overdue-card { border-left: 3px solid var(--overdue-text); }
+
+    /* Detail panel inside card */
+    .card-detail { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .card-detail.open { display: block; }
+    .card-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-bottom: 10px; }
+    .card-detail-label { font-size: 10px; font-weight: 500; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+    .card-detail-value { font-size: 12px; color: var(--text-primary); }
+
+    /* Notes in detail */
+    .card-notes { margin-top: 8px; }
+    .card-notes-title { font-size: 10px; font-weight: 500; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .card-note { padding: 6px 8px; background: #FAFAF9; border: 1px solid #eee; border-radius: 6px; border-left: 2px solid #d0d0d0; margin-bottom: 4px; }
+    .card-note-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+    .card-note-author { font-size: 10px; font-weight: 500; color: var(--text-secondary); }
+    .card-note-time { font-size: 10px; color: var(--text-tertiary); }
+    .card-note-body { font-size: 12px; color: var(--text-primary); white-space: pre-wrap; line-height: 1.4; }
+    .card-notes-empty { font-size: 11px; color: var(--text-tertiary); font-style: italic; }
+    .card-notes-scroll { max-height: 180px; overflow-y: auto; }
+    .role-badge { font-size: 8px; border-radius: 3px; padding: 1px 4px; margin-left: 3px; }
+    .role-rep { background: #E8F5E9; color: #2E7D32; }
+    .role-system { background: #E3F2FD; color: #1565C0; }
+
+    /* Owner avatars */
+    .owners-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .owner-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-secondary); }
 
     /* Pills */
     .pill { display: inline-flex; align-items: center; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
@@ -63,6 +108,7 @@
     @media (max-width: 700px) {
       .header { padding: 16px; }
       .filter-bar { padding: 0 16px 12px; }
+      .summary-strip { padding: 0 16px 12px; }
       .board { padding: 0 16px 24px; flex-direction: column; }
       .board-col { min-width: unset; }
     }
@@ -101,7 +147,10 @@
     <select id="filter-platform" onchange="renderBoard()"><option value="">All platforms</option></select>
     <select id="filter-status" onchange="renderBoard()"><option value="">All statuses</option></select>
     <select id="filter-priority" onchange="renderBoard()"><option value="">All priorities</option></select>
+    <span class="filter-clear" id="filter-clear" onclick="clearFilters()">Clear filters</span>
   </div>
+
+  <div class="summary-strip" id="summary-strip"></div>
 
   <div class="board" id="board"></div>
 </div>
@@ -112,12 +161,13 @@ const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let allProjects = [];
-let lifecycleStages = ['Planning', 'Development', 'Testing', 'Releasing']; // default fallback
+let lifecycleStages = ['Planning', 'Development', 'Testing', 'Releasing'];
+let configColors = {}; // label -> { bg, color }
+let boardToken = '';
+let notesCache = {}; // projectId -> [notes]
+let expandedCard = null; // currently expanded card id
 
-// Avatar color palette
 const AVATAR_COLORS = ['#EEEDFE|#534AB7','#E1F5EE|#0F6E56','#FAECE7|#993C1D','#E6F1FB|#185FA5','#FCE8F3|#9B2C6B'];
-
-// Default pill color
 const DEFAULT_PILL = { bg: '#F1EFE8', color: '#5F5E5A' };
 
 function escapeHtml(str) {
@@ -127,24 +177,43 @@ function escapeHtml(str) {
 
 async function init() {
   const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
+  boardToken = params.get('token') || '';
 
-  if (!token) {
+  if (!boardToken) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('invalid').style.display = 'block';
     return;
   }
 
   // Validate token
-  const { data: valid, error: valErr } = await _sb.rpc('validate_status_board_token', { p_token: token });
+  const { data: valid, error: valErr } = await _sb.rpc('validate_status_board_token', { p_token: boardToken });
   if (valErr || !valid) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('invalid').style.display = 'block';
     return;
   }
 
+  // Fetch config colors
+  const { data: configData } = await _sb.rpc('get_status_board_config', { p_token: boardToken });
+  if (configData && configData.length) {
+    const cfg = configData[0];
+    // Build a label -> {bg, color} map from all config lists
+    [cfg.execution_priorities, cfg.execution_statuses, cfg.execution_lifecycle_stages,
+     cfg.execution_sponsor_groups, cfg.execution_platforms].forEach(list => {
+      if (Array.isArray(list)) {
+        list.forEach(item => {
+          if (item.label && item.bg && item.color) configColors[item.label] = { bg: item.bg, color: item.color };
+        });
+      }
+    });
+    // Use lifecycle stages from config (preserves order)
+    if (Array.isArray(cfg.execution_lifecycle_stages) && cfg.execution_lifecycle_stages.length) {
+      lifecycleStages = cfg.execution_lifecycle_stages.map(s => s.label);
+    }
+  }
+
   // Fetch projects
-  const { data: projects, error: projErr } = await _sb.rpc('get_status_board_projects', { p_token: token });
+  const { data: projects, error: projErr } = await _sb.rpc('get_status_board_projects', { p_token: boardToken });
   if (projErr) {
     console.error('Failed to load projects:', projErr);
     document.getElementById('loading').style.display = 'none';
@@ -154,19 +223,8 @@ async function init() {
 
   allProjects = projects || [];
 
-  // Try to load workspace config for lifecycle stages and pill colors
-  // This uses the same token-based RPC approach — but we don't have an RPC for config.
-  // We'll derive lifecycle stages from the data itself + use defaults.
-  const stagesFromData = [...new Set(allProjects.map(p => p.execution_lifecycle).filter(Boolean))];
-  if (stagesFromData.length) {
-    // Preserve default order for known stages, append unknown ones
-    const known = ['Planning', 'Development', 'Testing', 'Releasing'];
-    const ordered = known.filter(s => stagesFromData.includes(s));
-    const extra = stagesFromData.filter(s => !known.includes(s));
-    lifecycleStages = [...ordered, ...extra];
-  }
-
   populateFilters();
+  renderSummary();
   renderBoard();
 
   document.getElementById('loading').style.display = 'none';
@@ -191,6 +249,19 @@ function fillSelect(id, values, defaultLabel) {
     values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
 }
 
+function clearFilters() {
+  document.getElementById('filter-platform').value = '';
+  document.getElementById('filter-status').value = '';
+  document.getElementById('filter-priority').value = '';
+  renderBoard();
+}
+
+function hasActiveFilters() {
+  return (document.getElementById('filter-platform')?.value || '') !== '' ||
+         (document.getElementById('filter-status')?.value || '') !== '' ||
+         (document.getElementById('filter-priority')?.value || '') !== '';
+}
+
 function getFiltered() {
   const fPlatform = document.getElementById('filter-platform')?.value || '';
   const fStatus = document.getElementById('filter-status')?.value || '';
@@ -203,51 +274,106 @@ function getFiltered() {
   });
 }
 
+function renderSummary() {
+  const strip = document.getElementById('summary-strip');
+  if (!strip) return;
+
+  // Count by status
+  const statusCounts = {};
+  allProjects.forEach(p => {
+    const s = p.execution_status || 'Unset';
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+  });
+
+  strip.innerHTML = Object.entries(statusCounts).map(([status, count]) => {
+    const c = pillColor(status);
+    return `<span class="summary-chip">
+      <span class="dot" style="background:${c.color};"></span>
+      ${escapeHtml(status)} <strong>${count}</strong>
+    </span>`;
+  }).join('');
+}
+
+function isOverdue(etaStr) {
+  if (!etaStr) return false;
+  const eta = new Date(etaStr + 'T00:00:00');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return eta < today;
+}
+
 function renderBoard() {
   const filtered = getFiltered();
   const board = document.getElementById('board');
   if (!board) return;
 
+  // Show/hide clear filters link
+  const clearBtn = document.getElementById('filter-clear');
+  if (clearBtn) clearBtn.style.display = hasActiveFilters() ? 'inline' : 'none';
+
   document.getElementById('board-count').textContent = filtered.length + ' active project' + (filtered.length !== 1 ? 's' : '');
 
-  // Group by lifecycle stage; include empty columns for all known stages
+  const totalProjects = filtered.length || 1; // avoid divide by zero
+
   board.innerHTML = lifecycleStages.map(stage => {
     const stageProjects = filtered.filter(p => p.execution_lifecycle === stage);
-    // Also include projects with no lifecycle in the first column
+    const pct = Math.round((stageProjects.length / totalProjects) * 100);
     return `
       <div class="board-col">
         <div class="board-col-header">
           ${escapeHtml(stage)}
           <span class="board-count">${stageProjects.length}</span>
         </div>
-        ${stageProjects.length ? stageProjects.map(renderCard).join('') : '<div class="board-empty">No projects</div>'}
+        <div class="col-progress"><div class="col-progress-fill" style="width:${pct}%;"></div></div>
+        ${stageProjects.length ? stageProjects.map(p => renderCard(p)).join('') : '<div class="board-empty">No projects</div>'}
       </div>
     `;
   }).join('');
 
-  // Unassigned column for projects with no lifecycle
+  // Unassigned column
   const unassigned = filtered.filter(p => !p.execution_lifecycle);
   if (unassigned.length) {
+    const pct = Math.round((unassigned.length / totalProjects) * 100);
     board.innerHTML += `
       <div class="board-col">
         <div class="board-col-header">
           Unassigned
           <span class="board-count">${unassigned.length}</span>
         </div>
-        ${unassigned.map(renderCard).join('')}
+        <div class="col-progress"><div class="col-progress-fill" style="width:${pct}%;"></div></div>
+        ${unassigned.map(p => renderCard(p)).join('')}
       </div>
     `;
+  }
+
+  // Re-expand previously expanded card if still visible
+  if (expandedCard) {
+    const detail = document.getElementById('detail-' + expandedCard);
+    const card = document.getElementById('card-' + expandedCard);
+    if (detail && card) {
+      detail.classList.add('open');
+      card.classList.add('expanded');
+      loadAndRenderNotes(expandedCard);
+    }
   }
 }
 
 function renderCard(p) {
   const eta = p.execution_eta ? new Date(p.execution_eta + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+  const overdue = isOverdue(p.execution_eta);
   const sponsorGroup = p.execution_sponsor_group || '';
   const platform = p.execution_platform || '';
   const metaParts = [sponsorGroup, platform].filter(Boolean);
 
+  const owners = p.execution_owners || [];
+  const ownerDetails = owners.map((o, i) => {
+    const [bg, col] = AVATAR_COLORS[i % AVATAR_COLORS.length].split('|');
+    const initials = o.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+    return `<span class="owner-chip"><span class="avatar" style="background:${bg};color:${col};">${initials}</span>${escapeHtml(o)}</span>`;
+  }).join('');
+
   return `
-    <div class="card">
+    <div class="card ${overdue ? 'overdue-card' : ''} ${expandedCard === p.id ? 'expanded' : ''}" id="card-${p.id}" onclick="toggleCard('${p.id}')">
       <div class="card-name">${escapeHtml(p.name)}</div>
       ${metaParts.length ? `<div class="card-meta">${escapeHtml(metaParts.join(' · '))}</div>` : ''}
       <div class="card-pills">
@@ -255,32 +381,144 @@ function renderCard(p) {
         ${p.execution_status ? makePill(p.execution_status) : ''}
       </div>
       <div class="card-footer">
-        <div class="card-eta">${eta ? 'ETA ' + eta : ''}</div>
+        <div class="card-eta ${overdue ? 'overdue' : ''}">${eta ? (overdue ? '⚠ Overdue — ' + eta : 'ETA ' + eta) : ''}</div>
         <div>${renderOwnerAvatars(p.execution_owners)}</div>
+      </div>
+      <div class="card-detail ${expandedCard === p.id ? 'open' : ''}" id="detail-${p.id}" onclick="event.stopPropagation();">
+        <div class="card-detail-grid">
+          <div>
+            <div class="card-detail-label">Sponsor Group</div>
+            <div class="card-detail-value">${escapeHtml(p.execution_sponsor_group) || '—'}</div>
+          </div>
+          <div>
+            <div class="card-detail-label">Platform</div>
+            <div class="card-detail-value">${escapeHtml(p.execution_platform) || '—'}</div>
+          </div>
+          <div>
+            <div class="card-detail-label">Priority</div>
+            <div class="card-detail-value">${p.execution_priority ? makePill(p.execution_priority) : '—'}</div>
+          </div>
+          <div>
+            <div class="card-detail-label">Status</div>
+            <div class="card-detail-value">${p.execution_status ? makePill(p.execution_status) : '—'}</div>
+          </div>
+          <div>
+            <div class="card-detail-label">ETA</div>
+            <div class="card-detail-value ${overdue ? 'overdue' : ''}">${eta || '—'}${overdue ? ' <span style="font-size:10px;color:var(--overdue-text);">(overdue)</span>' : ''}</div>
+          </div>
+          <div>
+            <div class="card-detail-label">Lifecycle</div>
+            <div class="card-detail-value">${escapeHtml(p.execution_lifecycle) || '—'}</div>
+          </div>
+        </div>
+        ${owners.length ? `
+        <div>
+          <div class="card-detail-label">Owners</div>
+          <div class="owners-row">${ownerDetails}</div>
+        </div>` : ''}
+        <div class="card-notes" id="notes-${p.id}">
+          <div class="card-notes-title">Notes</div>
+          <div class="card-notes-scroll" id="notes-scroll-${p.id}">
+            <div class="card-notes-empty">Loading…</div>
+          </div>
+        </div>
       </div>
     </div>
   `;
 }
 
-function makePill(label) {
-  // Simple color mapping based on known values
-  const colorMap = {
-    'Normal':         { bg: '#F1EFE8', color: '#5F5E5A' },
-    'On Track':       { bg: '#E1F5EE', color: '#0F6E56' },
-    'Not Started':    { bg: '#F1EFE8', color: '#5F5E5A' },
-    'Needs Info':     { bg: '#E6F1FB', color: '#185FA5' },
-    'On Hold':        { bg: '#F1EFE8', color: '#5F5E5A' },
-    'At Risk':        { bg: '#FAEEDA', color: '#854F0B' },
-    'Blocked':        { bg: '#FCEBEB', color: '#A32D2D' },
-  };
-  // For priority, check for keywords
-  let c = colorMap[label];
-  if (!c) {
-    const lower = label.toLowerCase();
-    if (lower.includes('critical') || lower.includes('asap')) c = { bg: '#FCEBEB', color: '#A32D2D' };
-    else if (lower.includes('high')) c = { bg: '#FAECE7', color: '#993C1D' };
-    else c = DEFAULT_PILL;
+function toggleCard(id) {
+  if (expandedCard === id) {
+    // Collapse
+    const detail = document.getElementById('detail-' + id);
+    const card = document.getElementById('card-' + id);
+    if (detail) detail.classList.remove('open');
+    if (card) card.classList.remove('expanded');
+    expandedCard = null;
+  } else {
+    // Collapse previous
+    if (expandedCard) {
+      const prevDetail = document.getElementById('detail-' + expandedCard);
+      const prevCard = document.getElementById('card-' + expandedCard);
+      if (prevDetail) prevDetail.classList.remove('open');
+      if (prevCard) prevCard.classList.remove('expanded');
+    }
+    // Expand new
+    const detail = document.getElementById('detail-' + id);
+    const card = document.getElementById('card-' + id);
+    if (detail) detail.classList.add('open');
+    if (card) card.classList.add('expanded');
+    expandedCard = id;
+    loadAndRenderNotes(id);
   }
+}
+
+async function loadAndRenderNotes(projectId) {
+  const container = document.getElementById('notes-scroll-' + projectId);
+  if (!container) return;
+
+  // Check cache first
+  if (notesCache[projectId]) {
+    renderNotes(container, notesCache[projectId]);
+    return;
+  }
+
+  container.innerHTML = '<div class="card-notes-empty">Loading…</div>';
+
+  const { data, error } = await _sb.rpc('get_status_board_notes', {
+    p_token: boardToken,
+    p_project_id: projectId,
+  });
+
+  if (error) {
+    console.warn('Failed to load notes:', error);
+    container.innerHTML = '<div class="card-notes-empty">Unable to load notes.</div>';
+    return;
+  }
+
+  notesCache[projectId] = data || [];
+  renderNotes(container, notesCache[projectId]);
+}
+
+function renderNotes(container, notes) {
+  if (!notes.length) {
+    container.innerHTML = '<div class="card-notes-empty">No notes yet.</div>';
+    return;
+  }
+  container.innerHTML = notes.map(n => {
+    const ts = new Date(n.created_at);
+    const timeStr = ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const roleBadge = n.author_role === 'rep' ? '<span class="role-badge role-rep">Rep</span>' :
+                      n.author_role === 'system' ? '<span class="role-badge role-system">System</span>' : '';
+    return `<div class="card-note">
+      <div class="card-note-header">
+        <span class="card-note-author">${escapeHtml(n.author_name)}${roleBadge}</span>
+        <span class="card-note-time">${timeStr}</span>
+      </div>
+      <div class="card-note-body">${escapeHtml(n.body)}</div>
+    </div>`;
+  }).join('');
+}
+
+function pillColor(label) {
+  // Use config colors if available, otherwise fall back to defaults
+  if (configColors[label]) return configColors[label];
+  // Hardcoded fallbacks for common values
+  const fallback = {
+    'On Track':    { bg: '#E1F5EE', color: '#0F6E56' },
+    'At Risk':     { bg: '#FAEEDA', color: '#854F0B' },
+    'Blocked':     { bg: '#FCEBEB', color: '#A32D2D' },
+    'Needs Info':  { bg: '#E6F1FB', color: '#185FA5' },
+  };
+  if (fallback[label]) return fallback[label];
+  const lower = (label || '').toLowerCase();
+  if (lower.includes('critical') || lower.includes('asap')) return { bg: '#FCEBEB', color: '#A32D2D' };
+  if (lower.includes('high')) return { bg: '#FAECE7', color: '#993C1D' };
+  return DEFAULT_PILL;
+}
+
+function makePill(label) {
+  const c = pillColor(label);
   return `<span class="pill" style="background:${c.bg};color:${c.color};">${escapeHtml(label)}</span>`;
 }
 

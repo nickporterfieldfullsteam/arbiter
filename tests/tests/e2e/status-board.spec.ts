@@ -124,9 +124,8 @@ test.describe('Status board (v1.17.0)', () => {
 
     const board = page.locator('#board');
 
-    // Seeded projects span 3 stages: Planning, Development, Testing
-    // Each stage gets its own column
-    await expect(board.locator('.board-col')).toHaveCount(3);
+    // Board shows all 4 lifecycle stages from config (including empty Releasing)
+    await expect(board.locator('.board-col')).toHaveCount(4);
 
     // Planning column has Beta
     await expect(board).toContainText('Planning');
@@ -139,6 +138,10 @@ test.describe('Status board (v1.17.0)', () => {
     // Testing column has Gamma
     await expect(board).toContainText('Testing');
     await expect(board.locator('.board-col').filter({ hasText: 'Testing' })).toContainText('Board Test Gamma');
+
+    // Releasing column exists but is empty
+    await expect(board).toContainText('Releasing');
+    await expect(board.locator('.board-col').filter({ hasText: 'Releasing' })).toContainText('No projects');
   });
 
   test('Cards show execution fields, not scores', async ({ page }) => {
@@ -186,5 +189,37 @@ test.describe('Status board (v1.17.0)', () => {
     await expect(page.locator('#board-count')).toContainText('1 active project');
     await expect(page.locator('#board')).toContainText('Board Test Beta');
     await expect(page.locator('#board')).not.toContainText('Board Test Alpha');
+  });
+
+  test('Clicking a card expands detail panel with execution fields', async ({ page }) => {
+    const url = getStatusBoardURL() + '?token=' + TEST_TOKEN;
+    await page.goto(url);
+    await expect(page.locator('#app')).toBeVisible({ timeout: 10_000 });
+
+    // Find the Alpha card and click it
+    const alphaCard = page.locator('.card', { hasText: 'Board Test Alpha' });
+    await expect(alphaCard).toBeVisible();
+    await alphaCard.click();
+
+    // Detail panel should be visible
+    const detail = alphaCard.locator('.card-detail');
+    await expect(detail).toBeVisible();
+
+    // Should show execution fields in the detail grid
+    await expect(detail).toContainText('Product');
+    await expect(detail).toContainText('Integrapark');
+    await expect(detail).toContainText('High');
+    await expect(detail).toContainText('On Track');
+
+    // Owner names visible in detail
+    await expect(detail).toContainText('Alice Smith');
+    await expect(detail).toContainText('Bob Jones');
+
+    // Notes section should exist
+    await expect(detail).toContainText('Notes');
+
+    // Click the card name area again to collapse (not the detail panel which stops propagation)
+    await alphaCard.locator('.card-name').click();
+    await expect(detail).toBeHidden();
   });
 });
