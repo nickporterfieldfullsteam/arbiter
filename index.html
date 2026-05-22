@@ -875,7 +875,7 @@
           </div>
           <div class="help-topic-body">
             <p style="margin:0 0 8px;">The submission review queue. Every saved project lives here in either List or Board view. The summary cards at the top — Total, This month, Avg score, Acceptance rate, Overdue revisits — give you a quick read on the intake pipeline.</p>
-            <p style="margin:0 0 8px;">Filter by status chip, type, tier, date, or rep. Search by project or customer name. Click a project to expand its details inline; from there you can change status, add decision notes, or set a revisit date.</p>
+            <p style="margin:0 0 8px;">Filter by status chip, type, tier, date, or rep. Search by project or customer name. Click a project to expand its details inline; from there you can change status, add intake notes, or set a revisit date.</p>
             <p style="margin:0;">Switch to <strong>Board</strong> to see projects laid out as a kanban grouped by status. Drag a card to a new column to change its status — the change persists.</p>
           </div>
         </div>
@@ -900,7 +900,7 @@
           </div>
           <div class="help-topic-body">
             <p style="margin:0 0 8px;">A request moves through statuses as the team works it: <strong>Submitted</strong> → <strong>Under Review</strong> → <strong>Accepted</strong>, <strong>Deferred</strong>, or <strong>Passed</strong>. <strong>Completed</strong> is the terminal state for accepted projects that have shipped.</p>
-            <p style="margin:0 0 8px;">When you change a project's status — or add decision notes, or set a revisit date — and click <strong>Save</strong>, Arbiter automatically emails the original submitter. They see the new status, your notes, and any revisit date. They never see the score or tier (those are internal).</p>
+            <p style="margin:0 0 8px;">When you change a project's status — or add intake notes, or set a revisit date — and click <strong>Save</strong>, Arbiter automatically emails the original submitter. They see the new status, your notes, and any revisit date. They never see the score or tier (those are internal).</p>
             <p style="margin:0;"><strong>Deferred</strong> projects benefit from a revisit date. The Dashboard's <strong>Upcoming revisits</strong> widget surfaces ones approaching within 14 days, so nothing slips out of mind.</p>
           </div>
         </div>
@@ -922,7 +922,7 @@
             <span class="help-topic-chevron">▾</span>
           </div>
           <div class="help-topic-body">
-            <p style="margin:0 0 8px;">Arbiter sends transactional emails for two events: <strong>new submissions</strong> (sent to all workspace members) and <strong>project updates</strong> (sent to the rep when status, decision notes, or revisit date change).</p>
+            <p style="margin:0 0 8px;">Arbiter sends transactional emails for two events: <strong>new submissions</strong> (sent to all workspace members) and <strong>project updates</strong> (sent to the rep when status, intake notes, or revisit date change).</p>
             <p style="margin:0 0 8px;">In <strong>Settings → Workspace members</strong>, each member has an <em>Email me on new submissions</em> checkbox on their own row. Uncheck it to opt out of those notifications. Project updates always go to the rep — they're decisions the rep needs to know about.</p>
             <p style="margin:0;"><strong>Settings → Recent notifications</strong> shows the last 50 send attempts with status pills (Sent, Failed, Skipped). Hover a Failed pill to see the error.</p>
           </div>
@@ -959,7 +959,7 @@
           </div>
           <div class="help-topic-body">
             <p style="margin:0 0 8px;">Reps sign in at <strong>/arbiter/portal/</strong> with a magic link. They see only their own submissions, can submit new requests, and edit a submission while it's still in <strong>Submitted</strong> status.</p>
-            <p style="margin:0 0 8px;">Reps never see scores, tiers, weights, or other reps' projects. Their dashboard shows status, decision notes, and revisit dates — the same things they get in their notification emails.</p>
+            <p style="margin:0 0 8px;">Reps never see scores, tiers, weights, or other reps' projects. Their dashboard shows status, intake notes, and revisit dates — the same things they get in their notification emails.</p>
             <p style="margin:0;">If you want to preview what a rep sees, sign out of the main app, open the portal URL, and sign in as a rep account.</p>
           </div>
         </div>
@@ -1169,7 +1169,7 @@
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-2-5" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
-                Decision notes textarea saves on change
+                Intake notes textarea saves on change
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-2-6" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
@@ -1181,7 +1181,7 @@
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-2-11" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
-                Export as CSV includes status, decision notes, locked fields
+                Export as CSV includes status, intake notes, locked fields
               </label>
               <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:400;cursor:pointer;padding:4px 0;color:#444;line-height:1.5;">
                 <input type="checkbox" id="qa-2-14" onchange="saveQA()" style="width:auto;accent-color:#1a1a1a;margin-top:2px;flex-shrink:0;">
@@ -1690,7 +1690,7 @@
 
 <script>
 const VERSION = '1.17.0';
-const BUILD_STAMP = '2026-05-13 10:29:55 PM EST';
+const BUILD_STAMP = '2026-05-21 10:33:03 PM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2601,7 +2601,6 @@ function renderDetailEditor() {
   detailFields.forEach((f, fi) => {
     const card = document.createElement('div');
     card.className = 'criterion-card'; card.id = 'dfcard-' + f.id;
-    card.draggable = true;
     card.dataset.id = f.id;
     card.dataset.list = 'detail';
     card.innerHTML = `
@@ -3215,8 +3214,8 @@ function openKanbanCard(id) {
       </div>
 
       <div style="margin-bottom:12px;">
-        <label style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px;">Decision notes</label>
-        <textarea style="font-size:13px;min-height:60px;width:100%;font-family:inherit;padding:8px 10px;border:1px solid #ddd;border-radius:8px;resize:vertical;box-sizing:border-box;" placeholder="Why was this decision made?" onchange="draftUpdateField('${p.id}','decisionNotes',this.value)">${p.decisionNotes||''}</textarea>
+        <label style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px;">Intake notes</label>
+        <textarea style="font-size:13px;min-height:60px;width:100%;font-family:inherit;padding:8px 10px;border:1px solid #ddd;border-radius:8px;resize:vertical;box-sizing:border-box;" placeholder="Why was this decision made?" oninput="draftUpdateField('${p.id}','decisionNotes',this.value)">${p.decisionNotes||''}</textarea>
       </div>
 
       ${lockedRows || detailRows ? `
@@ -4523,8 +4522,8 @@ function renderProjectList() {
           </div>
         </div>
         <div style="margin-bottom:12px;">
-          <label style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px;">Decision notes</label>
-          <textarea style="font-size:13px;min-height:60px;width:100%;font-family:inherit;padding:8px 10px;border:1px solid #ddd;border-radius:8px;resize:vertical;box-sizing:border-box;" placeholder="Why was this decision made? This can be included in the notification email." onchange="draftUpdateField('${p.id}','decisionNotes',this.value)">${p.decisionNotes||''}</textarea>
+          <label style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;display:block;margin-bottom:6px;">Intake notes</label>
+          <textarea style="font-size:13px;min-height:60px;width:100%;font-family:inherit;padding:8px 10px;border:1px solid #ddd;border-radius:8px;resize:vertical;box-sizing:border-box;" placeholder="Why was this decision made? This can be included in the notification email." oninput="draftUpdateField('${p.id}','decisionNotes',this.value)">${p.decisionNotes||''}</textarea>
         </div>
         ${(lockedRows || detailRows) ? `
         <details style="margin-bottom:12px;">
@@ -5091,7 +5090,7 @@ function decisionVerb(status) {
 function exportCSV() {
   if (!projects.length) { toast('No projects to export yet.'); return; }
   const lockedHeaders = LOCKED_FIELDS.map(f => f.label);
-  const headers = [...lockedHeaders, ...detailFields.map(f => f.label), 'Date', 'Score', 'Tier', 'Status', 'Decision Notes', 'Revisit Date', 'Partial', ...criteria.map(c => c.label)];
+  const headers = [...lockedHeaders, ...detailFields.map(f => f.label), 'Date', 'Score', 'Tier', 'Status', 'Intake Notes', 'Revisit Date', 'Partial', ...criteria.map(c => c.label)];
   const rows = projects.map(p => [
     ...LOCKED_FIELDS.map(f => p.lockedVals ? (p.lockedVals[f.id] || '') : ''),
     ...detailFields.map(f => p.detailVals ? (p.detailVals[f.id] || '') : ''),
@@ -5468,7 +5467,6 @@ function renderEditor() {
   const container = document.getElementById('editor-list'); container.innerHTML = '';
   criteria.forEach((c, ci) => {
     const card = document.createElement('div'); card.className = 'criterion-card'; card.id = 'ecard-' + c.id;
-    card.draggable = true;
     card.dataset.id = c.id;
     card.dataset.list = 'criteria';
     card.innerHTML = `
@@ -5514,12 +5512,20 @@ function initDrag(containerId, listType) {
   let dragSrc = null;
 
   container.querySelectorAll('.criterion-card').forEach(card => {
+    // Only allow drag when initiated from the drag handle
+    card.draggable = false;
+    const handle = card.querySelector('.drag-handle');
+    if (handle) {
+      handle.addEventListener('mousedown', () => { card.draggable = true; });
+      handle.addEventListener('mouseup', () => { card.draggable = false; });
+    }
     card.addEventListener('dragstart', e => {
       dragSrc = card;
       card.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
     });
     card.addEventListener('dragend', () => {
+      card.draggable = false;
       card.classList.remove('dragging');
       container.querySelectorAll('.criterion-card').forEach(c => c.classList.remove('drag-over'));
       // Commit new order to data
