@@ -1690,7 +1690,7 @@
 
 <script>
 const VERSION = '1.17.0';
-const BUILD_STAMP = '2026-05-22 04:56:35 PM EST';
+const BUILD_STAMP = '2026-05-22 09:34:50 PM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2490,7 +2490,10 @@ async function loadProjectNotes(projectId) {
 async function addProjectNote(projectId, body) {
   if (!body.trim()) return;
   if (!currentWorkspaceId) return;
-  const authorName = currentUser?.email || 'PM';
+  const authorName = currentUser?.user_metadata?.full_name
+    || currentUser?.user_metadata?.name
+    || currentUser?.email
+    || 'PM';
   const { error } = await _sb.from('project_notes').insert({
     project_id: projectId,
     workspace_id: currentWorkspaceId,
@@ -2525,7 +2528,11 @@ function renderNotesLog(projectId, containerId) {
         const ts = new Date(n.created_at);
         const timeStr = ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
         const isMe = n.author_email && currentUser?.email && n.author_email.toLowerCase() === currentUser.email.toLowerCase();
-        const authorLabel = isMe ? 'You' : (n.author_name || n.author_email || 'Unknown');
+        let authorLabel = isMe ? 'You' : (n.author_name || n.author_email || 'Unknown');
+        // Clean up email-as-name from older notes
+        if (!isMe && authorLabel.includes('@')) {
+          authorLabel = authorLabel.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        }
         const roleBadge = n.author_role === 'rep' ? '<span style="font-size:9px;background:#E8F5E9;color:#2E7D32;border-radius:4px;padding:1px 5px;margin-left:4px;">Rep</span>' :
                           n.author_role === 'system' ? '<span style="font-size:9px;background:#E3F2FD;color:#1565C0;border-radius:4px;padding:1px 5px;margin-left:4px;">System</span>' : '';
         return `<div style="padding:8px 10px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;border-left:3px solid #d0d0d0;">

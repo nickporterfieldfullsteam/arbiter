@@ -490,9 +490,14 @@ function renderNotes(container, notes) {
     const timeStr = ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     const roleBadge = n.author_role === 'rep' ? '<span class="role-badge role-rep">Rep</span>' :
                       n.author_role === 'system' ? '<span class="role-badge role-system">System</span>' : '';
+    // Clean up author name: if it looks like an email, show just the name part
+    let displayName = n.author_name || 'Unknown';
+    if (displayName.includes('@')) {
+      displayName = displayName.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
     return `<div class="card-note">
       <div class="card-note-header">
-        <span class="card-note-author">${escapeHtml(n.author_name)}${roleBadge}</span>
+        <span class="card-note-author">${escapeHtml(displayName)}${roleBadge}</span>
         <span class="card-note-time">${timeStr}</span>
       </div>
       <div class="card-note-body">${escapeHtml(n.body)}</div>
