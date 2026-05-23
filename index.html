@@ -12,9 +12,16 @@
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; font-size: 16px; min-height: 100vh; padding-bottom: 48px; }
   .app { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem 4rem; }
   h1 { font-size: 22px; font-weight: 500; }
-  .tabs { display: flex; gap: 4px; margin-bottom: 1.25rem; flex-wrap: wrap; }
-  .tab { padding: 7px 16px; font-size: 13px; font-weight: 500; border-radius: 8px; border: 1px solid transparent; color: #666; background: transparent; font-family: inherit; cursor: pointer; }
-  .tab.active { background: #fff; border-color: #ccc; color: #1a1a1a; }
+  /* Header bar */
+  .app-header { display: flex; align-items: stretch; height: 48px; padding: 0 24px; background: #fff; border-bottom: 1px solid #e5e5e5; margin: 0 -1.5rem 1.25rem; gap: 20px; }
+  .app-header-brand { display: flex; align-items: center; gap: 8px; margin-right: 12px; }
+  .app-header-title { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: #1a1a1a; }
+  .app-header-gear { font-family: inherit; font-size: 17px; background: none; border: none; cursor: pointer; color: #999; padding: 0; display: flex; align-items: center; }
+  .app-header-gear:hover { color: #555; }
+  .tabs { display: flex; gap: 0; flex: 1; align-items: stretch; }
+  .tab { padding: 0 12px; font-size: 13px; font-weight: 500; border: none; border-bottom: 2px solid transparent; color: #888; background: transparent; font-family: inherit; cursor: pointer; display: flex; align-items: center; transition: color 0.15s, border-color 0.15s; }
+  .tab:hover { color: #555; }
+  .tab.active { color: #1a1a1a; border-bottom-color: #232337; }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
   .section { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
@@ -84,8 +91,9 @@
     /* App padding */
     .app { padding: 1rem 0.75rem 5rem; }
     /* Tabs */
-    .tabs { gap: 2px; }
-    .tab { padding: 6px 10px; font-size: 12px; }
+    .app-header { padding: 0 16px; gap: 12px; overflow-x: auto; }
+    .app-header-brand { margin-right: 4px; }
+    .tab { padding: 0 8px; font-size: 12px; white-space: nowrap; }
     /* Config drawer: full width */
     #config-drawer { width: 100vw !important; }
     /* FAB */
@@ -396,24 +404,23 @@
 </div>
 
 <div class="app" style="display:none;">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-    <div style="display:flex;align-items:center;gap:12px;">
-      <svg width="28" height="28" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0;"><g transform="translate(0,40)"><path d="M299.5,0L300.5,0C312.62,22.206 596.29,514.733 599.999,518.5C599.502,518.555 600.496,519.944 599.999,519.999C586.124,521.54 586.143,519.999 425.5,519.999C402.663,476.501 212.278,153.055 213.74,149.585C215.734,144.853 271.252,51.701 299.5,0Z" fill="rgb(35,35,55)"/><path d="M174.5,519.999L1.5,519.999C5.384,505.899 97.29,355.328 96.205,351.588C94.754,346.584 8.021,202.453 11.494,201.478C19.582,199.209 19.75,201.486 116.5,201.486C182.503,201.486 183.471,200.957 185.084,203.744C191.921,215.556 269.754,350.04 270.226,351.582C271.114,354.481 194.017,482.647 174.5,519.999Z" fill="rgb(0,199,111)"/></g></svg>
-      <div>
-        <h1 style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin:0;line-height:1.15;">Arbiter</h1>
-        <span style="font-size:13px;color:#aaa;">Make the call.</span>
-      </div>
+  <div class="app-header">
+    <div class="app-header-brand">
+      <svg width="20" height="17" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0;">
+        <path d="M299.5,0L300.5,0C312.62,22.206 596.29,514.733 599.999,518.5C599.502,518.555 600.496,519.944 599.999,519.999C586.124,521.54 586.143,519.999 425.5,519.999C402.663,476.501 212.278,153.055 213.74,149.585C215.734,144.853 271.252,51.701 299.5,0Z" fill="#232337"/>
+        <path d="M174.5,519.999L1.5,519.999C5.384,505.899 97.29,355.328 96.205,351.588C94.754,346.584 8.021,202.453 11.494,201.478C19.582,199.209 19.75,201.486 116.5,201.486C182.503,201.486 183.471,200.957 185.084,203.744C191.921,215.556 269.754,350.04 270.226,351.582C271.114,354.481 194.017,482.647 174.5,519.999Z" fill="#00C76F"/>
+      </svg>
+      <span class="app-header-title">ARBITER</span>
     </div>
-    <button id="btn-config" onclick="openConfigDrawer()" style="font-family:inherit;font-size:18px;width:34px;height:34px;border-radius:8px;border:1px solid #e5e5e5;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#666;" title="Configure">⚙</button>
-  </div>
-
-  <div class="tabs" id="main-tabs">
-    <button class="tab" onclick="showTab('dashboard')" id="tab-btn-dashboard">Dashboard</button>
-    <button class="tab" onclick="showTab('tracker')" id="tab-btn-tracker">Intake</button>
-    <button class="tab" onclick="showTab('active-projects')" id="tab-btn-active-projects">Active Projects</button>
-    <button class="tab" onclick="showTab('submitters')" id="tab-btn-submitters">Reps</button>
-    <button class="tab" onclick="showTab('insights')" id="tab-btn-insights">Insights</button>
-    <button class="tab" onclick="showTab('help')" id="tab-btn-help">Help</button>
+    <div class="tabs" id="main-tabs">
+      <button class="tab" onclick="showTab('dashboard')" id="tab-btn-dashboard">Dashboard</button>
+      <button class="tab" onclick="showTab('tracker')" id="tab-btn-tracker">Intake</button>
+      <button class="tab" onclick="showTab('active-projects')" id="tab-btn-active-projects">Active Projects</button>
+      <button class="tab" onclick="showTab('submitters')" id="tab-btn-submitters">Reps</button>
+      <button class="tab" onclick="showTab('insights')" id="tab-btn-insights">Insights</button>
+      <button class="tab" onclick="showTab('help')" id="tab-btn-help">Help</button>
+    </div>
+    <button id="btn-config" onclick="openConfigDrawer()" class="app-header-gear" title="Configure">⚙</button>
   </div>
 
   <!-- DASHBOARD -->
@@ -1690,7 +1697,7 @@
 
 <script>
 const VERSION = '1.18.0';
-const BUILD_STAMP = '2026-05-22 10:14:18 PM EST';
+const BUILD_STAMP = '2026-05-23 07:18:43 PM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
