@@ -163,6 +163,7 @@ const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let allProjects = [];
 let lifecycleStages = ['Planning', 'Development', 'Testing', 'Releasing'];
 let configColors = {}; // label -> { bg, color }
+let detailFieldLabels = {}; // field id -> label
 let boardToken = '';
 let notesCache = {}; // projectId -> [notes]
 let expandedCard = null; // currently expanded card id
@@ -209,6 +210,12 @@ async function init() {
     // Use lifecycle stages from config (preserves order)
     if (Array.isArray(cfg.execution_lifecycle_stages) && cfg.execution_lifecycle_stages.length) {
       lifecycleStages = cfg.execution_lifecycle_stages.map(s => s.label);
+    }
+    // Build detail field id -> label map
+    if (Array.isArray(cfg.detail_fields)) {
+      cfg.detail_fields.forEach(f => {
+        if (f.id && f.label) detailFieldLabels[f.id] = f.label;
+      });
     }
   }
 
@@ -411,6 +418,7 @@ function renderCard(p) {
             <div class="card-detail-value">${escapeHtml(p.execution_lifecycle) || '—'}</div>
           </div>
         </div>
+        ${renderDetailVals(p.detail_vals)}
         ${owners.length ? `
         <div>
           <div class="card-detail-label">Owners</div>
@@ -425,6 +433,19 @@ function renderCard(p) {
       </div>
     </div>
   `;
+}
+
+function renderDetailVals(detailVals) {
+  if (!detailVals || typeof detailVals !== 'object') return '';
+  const entries = Object.entries(detailVals).filter(([k, v]) => v && String(v).trim());
+  if (!entries.length) return '';
+  return entries.map(([id, value]) => {
+    const label = detailFieldLabels[id] || id;
+    return `<div style="margin-bottom:8px;">
+      <div class="card-detail-label">${escapeHtml(label)}</div>
+      <div class="card-detail-value" style="white-space:pre-wrap;">${escapeHtml(String(value))}</div>
+    </div>`;
+  }).join('');
 }
 
 function toggleCard(id) {
