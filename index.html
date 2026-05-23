@@ -10,10 +10,11 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { overflow-y: scroll; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; font-size: 16px; min-height: 100vh; padding-bottom: 48px; }
-  .app { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+  .app { max-width: 1100px; margin: 0 auto; padding: 60px 1rem 4rem; }
   h1 { font-size: 22px; font-weight: 500; }
-  /* Header bar */
-  .app-header { display: flex; align-items: stretch; height: 48px; padding: 0 24px; background: #fff; border-bottom: 1px solid #e5e5e5; margin: 0 -1.5rem 1.25rem; gap: 20px; }
+  /* Header bar — fixed full-width, like the footer */
+  .app-header { position: fixed; top: 0; left: 0; right: 0; height: 48px; background: #fff; border-bottom: 1px solid #e5e5e5; z-index: 400; }
+  .app-header-inner { max-width: 1100px; margin: 0 auto; padding: 0 1rem; height: 100%; display: flex; align-items: stretch; gap: 20px; }
   .app-header-brand { display: flex; align-items: center; gap: 8px; margin-right: 12px; }
   .app-header-title { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: #1a1a1a; }
   .app-header-gear { font-family: inherit; font-size: 17px; background: none; border: none; cursor: pointer; color: #999; padding: 0; display: flex; align-items: center; }
@@ -89,7 +90,7 @@
     /* Kanban sort bar: wrap */
     .kanban-sort-bar { flex-wrap: wrap; }
     /* App padding */
-    .app { padding: 1rem 0.75rem 5rem; }
+    .app { padding: 56px 0.75rem 5rem; }
     /* Tabs */
     .app-header { padding: 0 16px; gap: 12px; overflow-x: auto; }
     .app-header-brand { margin-right: 4px; }
@@ -403,8 +404,8 @@
   </div>
 </div>
 
-<div class="app" style="display:none;">
-  <div class="app-header">
+<div class="app-header" id="app-header" style="display:none;">
+  <div class="app-header-inner">
     <div class="app-header-brand">
       <svg width="20" height="17" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0;">
         <path d="M299.5,0L300.5,0C312.62,22.206 596.29,514.733 599.999,518.5C599.502,518.555 600.496,519.944 599.999,519.999C586.124,521.54 586.143,519.999 425.5,519.999C402.663,476.501 212.278,153.055 213.74,149.585C215.734,144.853 271.252,51.701 299.5,0Z" fill="#232337"/>
@@ -422,6 +423,9 @@
     </div>
     <button id="btn-config" onclick="openConfigDrawer()" class="app-header-gear" title="Configure">⚙</button>
   </div>
+</div>
+
+<div class="app" style="display:none;">
 
   <!-- DASHBOARD -->
   <div id="tab-dashboard" class="tab-panel">
@@ -1697,7 +1701,7 @@
 
 <script>
 const VERSION = '1.18.0';
-const BUILD_STAMP = '2026-05-23 07:18:43 PM EST';
+const BUILD_STAMP = '2026-05-23 07:28:33 PM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -7008,12 +7012,14 @@ async function init() {
 function showAuthGate() {
   document.getElementById('auth-gate').style.display = 'flex';
   document.querySelector('.app').style.display = 'none';
+  document.getElementById('app-header').style.display = 'none';
   setTimeout(() => { const el = document.getElementById('auth-email'); if (el) el.focus(); }, 100);
 }
 
 function hideAuthGate() {
   document.getElementById('auth-gate').style.display = 'none';
   document.querySelector('.app').style.display = '';
+  document.getElementById('app-header').style.display = '';
 }
 
 function showSignIn() {
@@ -7240,7 +7246,7 @@ function showConfigTab(tab) {
   bar.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:1rem;';
   bar.innerHTML = '<button onclick="document.getElementById(\'config-back-bar\').remove();showTab(\'tracker\')" style="font-family:inherit;font-size:13px;padding:5px 12px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;cursor:pointer;color:#555;">← Back to Intake</button>';
   const appEl = document.querySelector('.app');
-  if (appEl) appEl.insertBefore(bar, appEl.children[2]);
+  if (appEl) appEl.insertBefore(bar, appEl.firstChild);
 }
 
 function showNewRequest() {
@@ -7260,7 +7266,7 @@ function showNewRequest() {
   bar.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:1rem;';
   bar.innerHTML = '<button onclick="document.getElementById(\'config-back-bar\').remove();showTab(\'tracker\')" style="font-family:inherit;font-size:13px;padding:5px 12px;border:1px solid #e5e5e5;border-radius:8px;background:#fff;cursor:pointer;color:#555;">← Back to Intake</button>';
   const appEl = document.querySelector('.app');
-  if (appEl) appEl.insertBefore(bar, appEl.children[2]);
+  if (appEl) appEl.insertBefore(bar, appEl.firstChild);
   window.scrollTo(0, 0);
   // Reset form state AFTER the tab is visible, so any unexpected error
   // in the reset logic cannot prevent the tab from showing. Each step is
