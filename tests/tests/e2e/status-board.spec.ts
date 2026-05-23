@@ -58,7 +58,8 @@ test.describe('Status board (v1.17.0)', () => {
     await sb.from('projects').insert([
       {
         workspace_id: workspaceId, name: 'Board Test Alpha', status: 'Accepted', score: 80, tier: 'pursue',
-        criteria_vals: {}, criteria_snapshot: {}, locked_vals: {}, detail_vals: {},
+        criteria_vals: {}, criteria_snapshot: {}, locked_vals: {},
+        detail_vals: { cqp5pw93: 'Build a real-time analytics dashboard for enterprise clients.', chmxh8m8: 'Requested by three top-tier accounts.' },
         project_type: '', is_sample: false,
         execution_sponsor_group: 'Product', execution_platform: 'Integrapark',
         execution_priority: 'High', execution_lifecycle: 'Development',
@@ -195,6 +196,7 @@ test.describe('Status board (v1.17.0)', () => {
     const url = getStatusBoardURL() + '?token=' + TEST_TOKEN;
     await page.goto(url);
     await expect(page.locator('#app')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#board-count')).toContainText('3 active projects', { timeout: 5000 });
 
     // Find the Alpha card and click it
     const alphaCard = page.locator('.card', { hasText: 'Board Test Alpha' });
@@ -221,5 +223,36 @@ test.describe('Status board (v1.17.0)', () => {
     // Click the card name area again to collapse (not the detail panel which stops propagation)
     await alphaCard.locator('.card-name').click();
     await expect(detail).toBeHidden();
+  });
+
+  test('Expanded card shows project detail fields from detail_vals', async ({ page }) => {
+    const url = getStatusBoardURL() + '?token=' + TEST_TOKEN;
+    await page.goto(url);
+    await expect(page.locator('#app')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#board-count')).toContainText('3 active projects', { timeout: 5000 });
+
+    // Click Alpha card which has detail_vals seeded
+    const alphaCard = page.locator('.card', { hasText: 'Board Test Alpha' });
+    await alphaCard.click();
+
+    const detail = alphaCard.locator('.card-detail');
+    await expect(detail).toBeVisible();
+
+    // Should show the brief description field label and value
+    await expect(detail).toContainText('Brief description');
+    await expect(detail).toContainText('Build a real-time analytics dashboard for enterprise clients.');
+
+    // Should show the notes/additional context field
+    await expect(detail).toContainText('Notes / additional context');
+    await expect(detail).toContainText('Requested by three top-tier accounts.');
+
+    // Beta card has empty detail_vals — no detail fields section
+    await alphaCard.locator('.card-name').click(); // collapse Alpha
+    const betaCard = page.locator('.card', { hasText: 'Board Test Beta' });
+    await betaCard.click();
+    const betaDetail = betaCard.locator('.card-detail');
+    await expect(betaDetail).toBeVisible();
+    // Should NOT contain any detail field labels (detail_vals is empty)
+    await expect(betaDetail).not.toContainText('Brief description');
   });
 });
