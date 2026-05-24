@@ -310,7 +310,7 @@
  * ============================================================ */
 
 const VERSION = '0.6.1';
-const BUILD_STAMP = '2026-05-23 08:00:15 PM EST';
+const BUILD_STAMP = '2026-05-23 08:11:08 PM EST';
 
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
@@ -338,6 +338,7 @@ function statusRank(s) { return STATUS_ORDER.indexOf(s || 'Submitted'); }
 
 let currentSession = null;
 let currentUser = null;
+let cachedRepName = null;
 let workspaceConfig = null;
 let activeProjectTypeId = null;
 
@@ -959,6 +960,7 @@ function prefillRepName() {
   if (rep?.name) {
     nameEl.value = rep.name;
     nameEl.readOnly = true;
+    cachedRepName = rep.name;
   } else if (currentUser?.email && currentSession?.access_token) {
     fetch(SUPABASE_URL + '/rest/v1/reps?email=eq.' + encodeURIComponent(currentUser.email.toLowerCase()) + '&select=name&limit=1', {
       headers: {
@@ -969,6 +971,7 @@ function prefillRepName() {
       if (rows?.[0]?.name && nameEl) {
         nameEl.value = rows[0].name;
         nameEl.readOnly = true;
+        cachedRepName = rows[0].name;
       }
     }).catch(() => {});
   }
@@ -1583,7 +1586,25 @@ async function loadPortalNotes(projectId) {
 function getRepDisplayName() {
   const rep = parseRepToken();
   if (rep?.name) return rep.name;
+  if (cachedRepName) return cachedRepName;
   return currentUser?.email || 'Rep';
+}
+
+async function loadRepName() {
+  if (cachedRepName) return;
+  const rep = parseRepToken();
+  if (rep?.name) { cachedRepName = rep.name; return; }
+  if (!currentUser?.email || !currentSession?.access_token) return;
+  try {
+    const resp = await fetch(SUPABASE_URL + '/rest/v1/reps?email=eq.' + encodeURIComponent(currentUser.email.toLowerCase()) + '&select=name&limit=1', {
+      headers: {
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': 'Bearer ' + currentSession.access_token,
+      }
+    });
+    const rows = await resp.json();
+    if (rows?.[0]?.name) cachedRepName = rows[0].name;
+  } catch {}
 }
 
 async function addPortalNote(projectId, body) {
@@ -1702,6 +1723,7 @@ async function init() {
     const [config] = await Promise.all([
       loadWorkspaceConfig(),
       renderSubmissionsList(),
+      loadRepName(),
     ]);
     if (config) {
       workspaceConfig = config;

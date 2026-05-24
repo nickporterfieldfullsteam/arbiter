@@ -1701,7 +1701,7 @@
 
 <script>
 const VERSION = '1.18.0';
-const BUILD_STAMP = '2026-05-23 08:00:15 PM EST';
+const BUILD_STAMP = '2026-05-23 08:11:08 PM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2546,7 +2546,8 @@ function renderNotesLog(projectId, containerId) {
         }
         const roleBadge = n.author_role === 'rep' ? '<span style="font-size:9px;background:#E8F5E9;color:#2E7D32;border-radius:4px;padding:1px 5px;margin-left:4px;">Rep</span>' :
                           n.author_role === 'system' ? '<span style="font-size:9px;background:#E3F2FD;color:#1565C0;border-radius:4px;padding:1px 5px;margin-left:4px;">System</span>' : '';
-        return `<div style="padding:8px 10px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;border-left:3px solid #d0d0d0;">
+        const borderColor = n.author_role === 'rep' ? '#2E7D32' : n.author_role === 'pm' ? '#185FA5' : '#d0d0d0';
+        return `<div style="padding:8px 10px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;border-left:3px solid ${borderColor};">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
             <span style="font-size:11px;font-weight:500;color:#555;">${escapeHtml(authorLabel)}${roleBadge}</span>
             <span style="font-size:11px;color:#aaa;">${timeStr}</span>
