@@ -172,7 +172,7 @@ test.describe('Phase 3 B.1 — Portal auth gate', () => {
     // and show the signed-in view.
     await expect(seededPortalPage.locator('#view-signed-in')).toBeVisible({ timeout: 5_000 });
     await expect(seededPortalPage.locator('#view-signin')).toBeHidden();
-    await expect(seededPortalPage.locator('#signed-in-email-inline')).toHaveText('test-rep@arbiter.test');
+    await expect(seededPortalPage.locator('#header-email')).toHaveText('test-rep@arbiter.test');
   });
 
   test('Sign out returns to the sign-in view', async ({ page, baseURL }) => {
@@ -217,7 +217,7 @@ test.describe('Phase 3 B.1 — Portal auth gate', () => {
     // No workaround needed — we can just verify the end state.
     await Promise.all([
       page.waitForLoadState('load'),
-      page.locator('#sub-dashboard button.btn-secondary', { hasText: /Sign out/i }).click(),
+      page.locator('#portal-header-right a', { hasText: /Sign out/i }).click(),
     ]);
 
     // After the post-signout reload, session should be gone and the

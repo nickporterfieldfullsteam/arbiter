@@ -17,13 +17,18 @@
     min-height: 100vh;
     padding-bottom: 40px;
   }
-  .app { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem 4rem; }
-  @media (max-width: 600px) { .app { padding: 1rem 0.75rem 5rem; } }
+  .app { max-width: 1100px; margin: 0 auto; padding: 60px 1rem 4rem; }
+  @media (max-width: 600px) { .app { padding: 56px 0.75rem 5rem; } }
 
-  .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-  .brand-block { display: flex; align-items: center; gap: 12px; }
-  .brand-text h1 { font-family: 'Montserrat', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin: 0; line-height: 1.15; }
-  .brand-text .tagline { font-size: 13px; color: #aaa; }
+  /* Header bar — fixed full-width, matches main app */
+  .portal-header { position: fixed; top: 0; left: 0; right: 0; height: 48px; background: #fff; border-bottom: 1px solid #e5e5e5; z-index: 400; }
+  .portal-header-inner { max-width: 1100px; margin: 0 auto; padding: 0 1rem; height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .portal-header-brand { display: flex; align-items: center; gap: 8px; }
+  .portal-header-title { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: #1a1a1a; }
+  .portal-header-label { font-size: 13px; font-weight: 400; color: #aaa; margin-left: 4px; }
+  .portal-header-right { display: flex; align-items: center; gap: 12px; font-size: 12px; color: #888; }
+  .portal-header-right a { color: #888; text-decoration: underline; cursor: pointer; font-size: 12px; }
+  .portal-header-right a:hover { color: #555; }
 
   .card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 2rem; max-width: 420px; margin: 3rem auto 0; }
   .card h2 { font-size: 20px; font-weight: 500; margin-bottom: 0.5rem; }
@@ -150,21 +155,24 @@
 </head>
 <body>
 
-<div class="app">
-  <div class="header-row">
-    <div class="brand-block">
-      <svg width="28" height="28" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0;">
-        <g transform="translate(0,40)">
-          <path d="M299.5,0L300.5,0C312.62,22.206 596.29,514.733 599.999,518.5C599.502,518.555 600.496,519.944 599.999,519.999C586.124,521.54 586.143,519.999 425.5,519.999C402.663,476.501 212.278,153.055 213.74,149.585C215.734,144.853 271.252,51.701 299.5,0Z" fill="rgb(35,35,55)"/>
-          <path d="M174.5,519.999L1.5,519.999C5.384,505.899 97.29,355.328 96.205,351.588C94.754,346.584 8.021,202.453 11.494,201.478C19.582,199.209 19.75,201.486 116.5,201.486C182.503,201.486 183.471,200.957 185.084,203.744C191.921,215.556 269.754,350.04 270.226,351.582C271.114,354.481 194.017,482.647 174.5,519.999Z" fill="rgb(0,199,111)"/>
-        </g>
+<div class="portal-header" id="portal-header" style="display:none;">
+  <div class="portal-header-inner">
+    <div class="portal-header-brand">
+      <svg width="20" height="17" viewBox="0 0 600 520" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0;">
+        <path d="M299.5,0L300.5,0C312.62,22.206 596.29,514.733 599.999,518.5C599.502,518.555 600.496,519.944 599.999,519.999C586.124,521.54 586.143,519.999 425.5,519.999C402.663,476.501 212.278,153.055 213.74,149.585C215.734,144.853 271.252,51.701 299.5,0Z" fill="#232337"/>
+        <path d="M174.5,519.999L1.5,519.999C5.384,505.899 97.29,355.328 96.205,351.588C94.754,346.584 8.021,202.453 11.494,201.478C19.582,199.209 19.75,201.486 116.5,201.486C182.503,201.486 183.471,200.957 185.084,203.744C191.921,215.556 269.754,350.04 270.226,351.582C271.114,354.481 194.017,482.647 174.5,519.999Z" fill="#00C76F"/>
       </svg>
-      <div class="brand-text">
-        <h1>Arbiter <span style="font-family:inherit;font-weight:400;text-transform:none;letter-spacing:0;font-size:16px;color:#aaa;">Portal</span></h1>
-        <span class="tagline">Submit and track requests.</span>
-      </div>
+      <span class="portal-header-title">ARBITER</span>
+      <span class="portal-header-label">Portal</span>
+    </div>
+    <div class="portal-header-right" id="portal-header-right">
+      <span id="header-email"></span>
+      <a onclick="signOut()">Sign out</a>
     </div>
   </div>
+</div>
+
+<div class="app">
 
   <div id="view-signin" class="card hidden">
     <h2>Sign in</h2>
@@ -194,7 +202,6 @@
       <div class="dashboard-bar">
         <div>
           <div class="title">Your submissions</div>
-          <div class="title-sub">Signed in as <span id="signed-in-email-inline">—</span></div>
         </div>
         <button class="btn-primary" style="width:auto;padding:10px 16px;" onclick="showFormView()">+ Submit a request</button>
       </div>
@@ -209,10 +216,6 @@
         </div>
         <div class="status-filter-bar" id="status-filter-bar"></div>
         <div id="projects-list"></div>
-      </div>
-
-      <div style="margin-top:1.5rem;text-align:right;">
-        <button class="btn-secondary" onclick="signOut()">Sign out</button>
       </div>
     </div>
 
@@ -310,7 +313,7 @@
  * ============================================================ */
 
 const VERSION = '0.6.1';
-const BUILD_STAMP = '2026-05-24 11:09:43 AM EST';
+const BUILD_STAMP = '2026-05-24 11:26:26 AM EST';
 
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
@@ -1743,8 +1746,11 @@ async function init() {
   }
 
   if (currentSession && currentUser) {
-    const emailInline = document.getElementById('signed-in-email-inline');
-    if (emailInline) emailInline.textContent = currentUser.email || '(no email)';
+    // Show header with email and sign-out
+    const portalHeader = document.getElementById('portal-header');
+    if (portalHeader) portalHeader.style.display = '';
+    const headerEmail = document.getElementById('header-email');
+    if (headerEmail) headerEmail.textContent = currentUser.email || '';
 
     showView('signed-in');
     showSubView('dashboard');
