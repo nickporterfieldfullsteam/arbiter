@@ -2,7 +2,7 @@
 //
 // Transactional email notifications for Arbiter.
 //
-// Three event types:
+// Four event types:
 //   - new_submission: a rep submitted a new project. Email all workspace
 //     members so any admin/PM knows there's something new to review.
 //   - project_updated: a PM saved changes to a project. Email the rep
@@ -11,6 +11,8 @@
 //   - member_invited: an admin invited someone to the workspace.
 //     Email the invitee with a sign-in link. The acceptance is automatic
 //     on first sign-in via the trigger added in migration 011.
+//   - rep_note_added: a rep left a note on a project. Email all workspace
+//     members so PMs know there's new context to review.
 //
 // Lookups use the service-role key to bypass RLS. The function itself
 // is gated by Supabase Edge's default JWT-required setting — only
@@ -44,7 +46,8 @@ const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 type EventBody =
   | { event_type: "new_submission"; project_id: string }
   | { event_type: "project_updated"; project_id: string; changes: string[] }
-  | { event_type: "member_invited"; invitation_id: string };
+  | { event_type: "member_invited"; invitation_id: string }
+  | { event_type: "rep_note_added"; project_id: string; note_body: string; rep_name: string };
 
 type SendResult = { email: string; ok: boolean; error?: string };
 
@@ -491,6 +494,50 @@ function emailMemberInvited(opts: {
   return { subject, html };
 }
 
+function emailRepNoteAdded(
+  project: any,
+  repName: string,
+  noteBody: string,
+): { subject: string; html: string } {
+  const projName = escapeHtml(project.name);
+  const customer = escapeHtml(project.locked_vals?.__customer__ || "");
+
+  const subject = `New note from ${repName} on: ${project.name}`;
+
+  const heroHtml = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;">
+      <tr>
+        <td style="padding:14px 18px; background:#fafaf9; border-radius:8px;">
+          <div style="font-size:11px; font-weight:500; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">New rep note</div>
+          <div style="font-size:18px; font-weight:600; color:#1a1a1a; margin-bottom:4px;">${projName}</div>
+          ${customer ? `<div style="font-size:13px; color:#888;">${customer}</div>` : ""}
+        </td>
+      </tr>
+    </table>`;
+
+  const noteHtml = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;">
+      <tr>
+        <td style="padding:14px 18px; background:#fff; border:1px solid #f0f0ee; border-radius:8px; border-left:3px solid #2E7D32;">
+          <div style="font-size:11px; font-weight:500; color:#2E7D32; margin-bottom:6px;">${escapeHtml(repName)} <span style="font-size:9px; background:#E8F5E9; color:#2E7D32; border-radius:4px; padding:1px 5px;">Rep</span></div>
+          <div style="font-size:14px; line-height:1.55; color:#1a1a1a; white-space:pre-wrap;">${escapeHtml(noteBody)}</div>
+        </td>
+      </tr>
+    </table>`;
+
+  const bodyHtml = heroHtml + noteHtml;
+
+  const html = emailShell({
+    heading: "New note on a project",
+    intro: `${escapeHtml(repName)} left a note on a project you manage.`,
+    bodyHtml,
+    ctaText: "View in Arbiter",
+    ctaUrl: APP_URL,
+  });
+
+  return { subject, html };
+}
+
 // ── Recipient lookups ──
 type WorkspaceMemberInfo = {
   email: string;
@@ -752,6 +799,70 @@ Deno.serve(async (req) => {
       status: results[0].ok ? "sent" : "failed",
       error: results[0].error,
     });
+  } else if (body.event_type === "rep_note_added") {
+    // Look up the project
+    const { data: project, error: pErr } = await sb
+      .from("projects")
+      .select("*")
+      .eq("id", body.project_id)
+      .maybeSingle();
+    if (pErr || !project) {
+      return new Response(
+        JSON.stringify({ error: pErr?.message || "Project not found" }),
+        { status: 404, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Email all workspace members (PMs) about the new rep note
+    const members = await getWorkspaceMembers(project.workspace_id);
+    if (!members.length) {
+      return new Response(
+        JSON.stringify({ sent: 0, skipped: "no workspace members" }),
+        { status: 200, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Filter by preference (default-true)
+    const toSend: string[] = [];
+    const toSkip: string[] = [];
+    for (const m of members) {
+      if (isSubscribed(m.prefs, "rep_note_added")) {
+        toSend.push(m.email);
+      } else {
+        toSkip.push(m.email);
+      }
+    }
+    skipped = toSkip.length;
+
+    const repName = body.rep_name || "A rep";
+    const noteBody = body.note_body || "";
+    const { subject, html } = emailRepNoteAdded(project, repName, noteBody);
+    results = await Promise.all(
+      toSend.map((email) => sendEmail(email, subject, html)),
+    );
+
+    // Audit
+    await Promise.all([
+      ...results.map((r) =>
+        recordAttempt({
+          workspaceId: project.workspace_id,
+          projectId: project.id,
+          eventType: "rep_note_added",
+          recipientEmail: r.email,
+          status: r.ok ? "sent" : "failed",
+          error: r.error,
+        })
+      ),
+      ...toSkip.map((email) =>
+        recordAttempt({
+          workspaceId: project.workspace_id,
+          projectId: project.id,
+          eventType: "rep_note_added",
+          recipientEmail: email,
+          status: "skipped_preference",
+        })
+      ),
+    ]);
   } else {
     return new Response(
       JSON.stringify({ error: `Unknown event_type: ${(body as any).event_type}` }),

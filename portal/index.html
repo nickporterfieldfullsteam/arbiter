@@ -310,7 +310,7 @@
  * ============================================================ */
 
 const VERSION = '0.6.1';
-const BUILD_STAMP = '2026-05-24 10:22:47 AM EST';
+const BUILD_STAMP = '2026-05-24 10:34:00 AM EST';
 
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
@@ -1627,10 +1627,36 @@ async function addPortalNote(projectId, body) {
     await loadPortalNotes(projectId);
     renderPortalNotesLog(projectId);
     portalToast('Note added.');
+    // Notify PMs about the new rep note (fire-and-forget)
+    notifyRepNote(projectId, body.trim()).catch(err => {
+      console.warn('[Portal] notify rep_note_added failed:', err);
+    });
   } catch (err) {
     console.error('[Portal] addPortalNote error:', err);
     portalToast('Failed to save note.');
   }
+}
+
+async function notifyRepNote(projectId, noteBody) {
+  if (!currentSession?.access_token) return;
+  // Skip in test environments with fake tokens
+  if (currentSession.access_token.startsWith('fake-')) return;
+  try {
+    await fetch(SUPABASE_URL + '/functions/v1/notify', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Authorization': 'Bearer ' + currentSession.access_token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        event_type: 'rep_note_added',
+        project_id: projectId,
+        note_body: noteBody,
+        rep_name: getRepDisplayName(),
+      }),
+    });
+  } catch {}
 }
 
 function renderPortalNotesLog(projectId) {
