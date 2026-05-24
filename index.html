@@ -1710,7 +1710,7 @@
 
 <script>
 const VERSION = '1.18.1';
-const BUILD_STAMP = '2026-05-23 08:53:34 PM EST';
+const BUILD_STAMP = '2026-05-23 09:06:28 PM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2497,7 +2497,7 @@ async function sbUpdateProjectField(id, dbField, value) {
  * ============================================================ */
 const projectNotesCache = new Map(); // projectId -> [{ id, author_name, author_role, body, created_at }]
 
-async function loadProjectNotes(projectId) {
+async function loadProjectNotes(projectId, markAsRead = true) {
   if (!currentWorkspaceId) return [];
   const { data, error } = await _sb.from('project_notes')
     .select('id, author_name, author_email, author_role, body, created_at')
@@ -2506,12 +2506,14 @@ async function loadProjectNotes(projectId) {
   if (error) { console.warn('[Arbiter] loadProjectNotes error:', error.message); return []; }
   projectNotesCache.set(projectId, data || []);
   // Mark notes as seen (update the project's notes_last_seen_at timestamp)
-  _sb.from('projects').update({ notes_last_seen_at: new Date().toISOString() }).eq('id', projectId)
-    .then(() => {
-      // Update in-memory project too
-      const p = projects.find(x => x.id === projectId);
-      if (p) p.notes_last_seen_at = new Date().toISOString();
-    });
+  // Skip when triggered by realtime to avoid clearing the "unread" state prematurely
+  if (markAsRead) {
+    _sb.from('projects').update({ notes_last_seen_at: new Date().toISOString() }).eq('id', projectId)
+      .then(() => {
+        const p = projects.find(x => x.id === projectId);
+        if (p) p.notes_last_seen_at = new Date().toISOString();
+      });
+  }
   return data || [];
 }
 
@@ -7164,7 +7166,7 @@ function handleRealtimeNoteInsert(note) {
   const modalContainer = document.getElementById('notes-log-modal-' + note.project_id);
   const execContainer = document.querySelector(`[data-notes-log="${note.project_id}"]`);
   if (inlineContainer || modalContainer || execContainer) {
-    loadProjectNotes(note.project_id).then(() => {
+    loadProjectNotes(note.project_id, false).then(() => {
       if (inlineContainer) renderNotesLog(note.project_id, inlineContainer.id);
       if (modalContainer) renderNotesLog(note.project_id, modalContainer.id);
       if (execContainer) renderNotesLog(note.project_id, execContainer.id);
