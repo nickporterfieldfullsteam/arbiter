@@ -1710,7 +1710,7 @@
 
 <script>
 const VERSION = '1.18.1';
-const BUILD_STAMP = '2026-05-23 09:06:28 PM EST';
+const BUILD_STAMP = '2026-05-24 10:22:47 AM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2484,11 +2484,13 @@ function mapDbProject(p) {
 
 async function sbDeleteProject(id) {
   if (!currentWorkspaceId) return;
+  markSelfChange();
   await _sb.from('projects').update({ deleted_at: new Date().toISOString() }).eq('id', id);
 }
 
 async function sbUpdateProjectField(id, dbField, value) {
   if (!currentWorkspaceId) return;
+  markSelfChange();
   await _sb.from('projects').update({ [dbField]: value }).eq('id', id);
 }
 
@@ -2508,6 +2510,7 @@ async function loadProjectNotes(projectId, markAsRead = true) {
   // Mark notes as seen (update the project's notes_last_seen_at timestamp)
   // Skip when triggered by realtime to avoid clearing the "unread" state prematurely
   if (markAsRead) {
+    markSelfChange();
     _sb.from('projects').update({ notes_last_seen_at: new Date().toISOString() }).eq('id', projectId)
       .then(() => {
         const p = projects.find(x => x.id === projectId);
@@ -2520,6 +2523,7 @@ async function loadProjectNotes(projectId, markAsRead = true) {
 async function addProjectNote(projectId, body) {
   if (!body.trim()) return;
   if (!currentWorkspaceId) return;
+  markSelfChange();
   const authorName = currentUser?.user_metadata?.full_name
     || currentUser?.user_metadata?.name
     || currentUser?.email
@@ -4761,6 +4765,7 @@ function buildExecutionSection(p, apMode) {
 }
 
 async function saveExecDraft(projectId, uid, apMode) {
+  markSelfChange();
   const p = projects.find(x => x.id == projectId);
   if (!p) return;
   const sg = document.getElementById('exec-sg-'+uid);
@@ -4970,6 +4975,7 @@ function refreshDraftUI(projectId) {
  * (useful later when wiring notifications).
  */
 async function saveDraft(projectId) {
+  markSelfChange();
   const d = projectDrafts.get(projectId);
   if (!d) return [];
   const p = projects.find(x => x.id == projectId);
@@ -7138,7 +7144,17 @@ function stopRealtimeSubscriptions() {
 }
 
 let _refreshDebounce = null;
+let _selfChangeCooldown = false;
+
+/** Call this before any local DB write to suppress the realtime echo. */
+function markSelfChange() {
+  _selfChangeCooldown = true;
+  setTimeout(() => { _selfChangeCooldown = false; }, 3000);
+}
+
 function handleRealtimeRefresh() {
+  // Skip if this was triggered by our own write
+  if (_selfChangeCooldown) return;
   // Debounce rapid changes (e.g. bulk updates, self-triggered saves)
   if (_refreshDebounce) clearTimeout(_refreshDebounce);
   _refreshDebounce = setTimeout(async () => {
