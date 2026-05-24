@@ -310,11 +310,11 @@
  * ============================================================ */
 
 const VERSION = '0.6.1';
-const BUILD_STAMP = '2026-05-23 07:28:33 PM EST';
+const BUILD_STAMP = '2026-05-23 08:00:15 PM EST';
 
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
-const WORKSPACE_ID = '704582e1-229c-470f-9eed-9d650e100118';
+const WORKSPACE_ID = window.__TEST_WORKSPACE_ID__ || '704582e1-229c-470f-9eed-9d650e100118';
 const STORAGE_KEY = 'sb-arbiter-portal-auth';
 
 const LOCKED_FIELDS = [
@@ -1326,7 +1326,7 @@ async function renderSubmissionsList() {
         submitter_email: currentUser.email,
         deleted_at: 'is.null',
       },
-      'id,name,status,created_at,locked_vals,detail_vals,criteria_vals,project_type,project_type_id,decision_notes,revisit_date,criteria_snapshot',
+      'id,workspace_id,name,status,created_at,locked_vals,detail_vals,criteria_vals,project_type,project_type_id,decision_notes,revisit_date,criteria_snapshot',
       'created_at.desc'
     );
     submissionsCache = rows || [];
@@ -1436,6 +1436,8 @@ function toggleProjectDetail(projectId) {
     panel.classList.add('open');
     if (chev) chev.textContent = '▴';
     expandedProjectId = projectId;
+    // Load and render notes
+    loadPortalNotes(projectId).then(() => renderPortalNotesLog(projectId));
   } else {
     panel.classList.remove('open');
     if (chev) chev.textContent = '▾';
@@ -1467,15 +1469,15 @@ function renderProjectDetailBody(p) {
     </div>
   `;
 
-  // PM notes if present
-  if (decisionNotes) {
-    topHtml += `
-      <div class="panel-section">
-        <div class="panel-section-title">PM notes</div>
-        <div class="v">${escapeHtml(decisionNotes)}</div>
+  // Notes log (replaces the old static PM notes section)
+  topHtml += `
+    <div class="panel-section">
+      <div class="panel-section-title">Notes</div>
+      <div id="portal-notes-${escapeHtml(p.id)}" data-portal-notes="${escapeHtml(p.id)}">
+        <div style="font-size:12px;color:#bbb;font-style:italic;">Loading…</div>
       </div>
-    `;
-  }
+    </div>
+  `;
 
   // --- Project details ---
   const locked = p.locked_vals || {};
@@ -1559,6 +1561,114 @@ function renderProjectDetailBody(p) {
 }
 
 /* ============================================================
+ * PORTAL NOTES — reps can read all notes and add their own
+ * ============================================================ */
+const portalNotesCache = new Map(); // projectId -> [notes]
+
+async function loadPortalNotes(projectId) {
+  try {
+    const notes = await sbSelectMany(
+      'project_notes',
+      { project_id: projectId },
+      'id,author_name,author_email,author_role,body,created_at',
+      'created_at.desc'
+    );
+    portalNotesCache.set(projectId, notes || []);
+  } catch (err) {
+    console.warn('[Portal] loadPortalNotes error:', err);
+    portalNotesCache.set(projectId, []);
+  }
+}
+
+function getRepDisplayName() {
+  const rep = parseRepToken();
+  if (rep?.name) return rep.name;
+  return currentUser?.email || 'Rep';
+}
+
+async function addPortalNote(projectId, body) {
+  if (!body.trim()) return;
+  // Look up workspace_id from cached projects
+  const project = submissionsCache.find(p => p.id === projectId);
+  if (!project) { portalToast('Unable to save note.'); return; }
+  try {
+    await sbInsert('project_notes', {
+      project_id: projectId,
+      workspace_id: project.workspace_id,
+      author_name: getRepDisplayName(),
+      author_email: currentUser?.email || null,
+      author_role: 'rep',
+      body: body.trim(),
+    });
+    await loadPortalNotes(projectId);
+    renderPortalNotesLog(projectId);
+    portalToast('Note added.');
+  } catch (err) {
+    console.error('[Portal] addPortalNote error:', err);
+    portalToast('Failed to save note.');
+  }
+}
+
+function renderPortalNotesLog(projectId) {
+  const container = document.getElementById('portal-notes-' + projectId);
+  if (!container) return;
+  const notes = portalNotesCache.get(projectId) || [];
+  const inputId = 'portal-note-input-' + projectId;
+
+  container.innerHTML = `
+    <div style="position:relative;margin-bottom:8px;">
+      <textarea id="${inputId}" style="width:100%;font-size:13px;min-height:36px;max-height:100px;font-family:inherit;padding:8px 10px;border:1px solid #ddd;border-radius:8px;resize:vertical;box-sizing:border-box;background:#fff;" placeholder="Add a note… (Enter to save, Shift+Enter for new line)"></textarea>
+    </div>
+    ${notes.length === 0 ? '<p style="font-size:12px;color:#bbb;font-style:italic;margin:0;">No notes yet.</p>' : ''}
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;">
+      ${notes.map(n => {
+        const ts = new Date(n.created_at);
+        const timeStr = ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        const isMe = n.author_email && currentUser?.email && n.author_email.toLowerCase() === currentUser.email.toLowerCase();
+        let authorLabel = isMe ? 'You' : (n.author_name || 'Unknown');
+        // Clean up email-as-name from older notes
+        if (!isMe && authorLabel.includes('@')) {
+          authorLabel = authorLabel.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        }
+        const roleBadge = n.author_role === 'pm'
+          ? '<span style="font-size:9px;background:#E6F1FB;color:#185FA5;border-radius:4px;padding:1px 5px;margin-left:4px;">PM</span>'
+          : n.author_role === 'system'
+          ? '<span style="font-size:9px;background:#E3F2FD;color:#1565C0;border-radius:4px;padding:1px 5px;margin-left:4px;">System</span>'
+          : '';
+        return `<div style="padding:8px 10px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;border-left:3px solid ${n.author_role === 'pm' ? '#185FA5' : '#d0d0d0'};">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:11px;font-weight:500;color:#555;">${escapeHtml(authorLabel)}${roleBadge}</span>
+            <span style="font-size:11px;color:#aaa;">${timeStr}</span>
+          </div>
+          <div style="font-size:13px;color:#333;white-space:pre-wrap;">${escapeHtml(n.body)}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // Wire up Enter-to-submit
+  const textarea = document.getElementById(inputId);
+  if (textarea) {
+    textarea.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const val = textarea.value;
+        if (val && val.trim()) {
+          await addPortalNote(projectId, val);
+        }
+      }
+    });
+  }
+}
+
+function portalToast(msg) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+/* ============================================================
  * Init
  * ============================================================ */
 
@@ -1625,6 +1735,8 @@ document.getElementById('signin-email').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); sendMagicLink(); }
 });
 </script>
+
+<div id="toast" class="toast"></div>
 
 </body>
 </html>
