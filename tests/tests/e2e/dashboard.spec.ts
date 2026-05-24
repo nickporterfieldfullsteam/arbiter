@@ -192,4 +192,96 @@ test.describe('Dashboard (v1.17.0)', () => {
     await authedPage.locator('#dash-unreviewed-list').locator('div', { hasText: 'Unreviewed nav test' }).first().click();
     await expect(authedPage.locator('#tab-tracker')).toBeVisible();
   });
+
+  test('Pipeline summary shows status distribution', async ({ authedPage }) => {
+    await seedProjects([
+      { name: 'Sub 1', status: 'Submitted', score: 60 },
+      { name: 'Sub 2', status: 'Submitted', score: 55 },
+      { name: 'Review 1', status: 'Under Review', score: 70 },
+      { name: 'Accepted 1', status: 'Accepted', score: 85 },
+      { name: 'Passed 1', status: 'Passed', score: 30 },
+    ]);
+
+    await reloadAndWaitForInit(authedPage);
+    await expect(authedPage.locator('#tab-dashboard')).toBeVisible();
+
+    const pipeline = authedPage.locator('#dash-pipeline');
+    await expect(pipeline).toBeVisible();
+    // Legend should show counts for each status
+    await expect(pipeline).toContainText('Submitted');
+    await expect(pipeline).toContainText('Under Review');
+    await expect(pipeline).toContainText('Accepted');
+    await expect(pipeline).toContainText('Passed');
+  });
+
+  test('Lifecycle distribution shows active project stages', async ({ authedPage }) => {
+    await seedProjects([
+      { name: 'Plan A', status: 'Accepted', score: 80, executionLifecycle: 'Planning' },
+      { name: 'Dev B', status: 'Accepted', score: 85, executionLifecycle: 'Development' },
+      { name: 'Dev C', status: 'Accepted', score: 75, executionLifecycle: 'Development' },
+      { name: 'Test D', status: 'Accepted', score: 90, executionLifecycle: 'Testing' },
+    ]);
+
+    await reloadAndWaitForInit(authedPage);
+    await expect(authedPage.locator('#tab-dashboard')).toBeVisible();
+
+    const lifecycle = authedPage.locator('#dash-lifecycle');
+    await expect(lifecycle).toBeVisible();
+    await expect(lifecycle).toContainText('Planning');
+    await expect(lifecycle).toContainText('Development');
+    await expect(lifecycle).toContainText('Testing');
+    await expect(lifecycle).toContainText('Releasing');
+    // Development should show 2
+    await expect(lifecycle).toContainText('2');
+  });
+
+  test('Aging submissions shows stale Submitted projects (5+ days)', async ({ authedPage }) => {
+    const tenDaysAgo = new Date();
+    tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+    await seedProjects([
+      { name: 'Old submission', status: 'Submitted', score: 50, createdAt: tenDaysAgo.toISOString() },
+      { name: 'Recent submission', status: 'Submitted', score: 55, createdAt: twoDaysAgo.toISOString() },
+    ]);
+
+    await reloadAndWaitForInit(authedPage);
+    await expect(authedPage.locator('#tab-dashboard')).toBeVisible();
+
+    const agingList = authedPage.locator('#dash-aging-list');
+    await expect(agingList).toContainText('Old submission');
+    await expect(agingList).toContainText('10 days');
+    await expect(agingList).not.toContainText('Recent submission');
+  });
+
+  test('Projects without owners shows Accepted projects with no execution_owners', async ({ authedPage }) => {
+    await seedProjects([
+      { name: 'Owned project', status: 'Accepted', score: 80, executionOwners: ['Alice Smith'] },
+      { name: 'Unowned project', status: 'Accepted', score: 75 },
+    ]);
+
+    await reloadAndWaitForInit(authedPage);
+    await expect(authedPage.locator('#tab-dashboard')).toBeVisible();
+
+    const unownedList = authedPage.locator('#dash-unowned-list');
+    await expect(unownedList).toContainText('Unowned project');
+    await expect(unownedList).not.toContainText('Owned project');
+    await expect(authedPage.locator('#dash-unowned-count')).toContainText('1 project');
+  });
+
+  test('Recently updated shows projects modified in last 7 days', async ({ authedPage }) => {
+    // Seed a project and immediately update it to set a fresh updated_at
+    const seeded = await seedProjects([
+      { name: 'Just updated', status: 'Accepted', score: 80 },
+    ]);
+
+    await reloadAndWaitForInit(authedPage);
+    await expect(authedPage.locator('#tab-dashboard')).toBeVisible();
+
+    const recentList = authedPage.locator('#dash-recent-list');
+    await expect(recentList).toContainText('Just updated');
+    await expect(authedPage.locator('#dash-recent-count')).toContainText('1 project');
+  });
 });
