@@ -310,7 +310,7 @@
  * ============================================================ */
 
 const VERSION = '0.6.1';
-const BUILD_STAMP = '2026-05-23 08:11:08 PM EST';
+const BUILD_STAMP = '2026-05-23 08:29:47 PM EST';
 
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
@@ -1595,6 +1595,8 @@ async function loadRepName() {
   const rep = parseRepToken();
   if (rep?.name) { cachedRepName = rep.name; return; }
   if (!currentUser?.email || !currentSession?.access_token) return;
+  // Skip if the token is clearly fake (test environment)
+  if (currentSession.access_token.startsWith('fake-')) return;
   try {
     const resp = await fetch(SUPABASE_URL + '/rest/v1/reps?email=eq.' + encodeURIComponent(currentUser.email.toLowerCase()) + '&select=name&limit=1', {
       headers: {
@@ -1602,6 +1604,7 @@ async function loadRepName() {
         'Authorization': 'Bearer ' + currentSession.access_token,
       }
     });
+    if (!resp.ok) return;
     const rows = await resp.json();
     if (rows?.[0]?.name) cachedRepName = rows[0].name;
   } catch {}

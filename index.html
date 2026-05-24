@@ -462,6 +462,15 @@
         <div id="dash-revisit-list" style="max-height:300px;overflow-y:auto;"></div>
       </div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px;">
+      <div class="section" style="margin-bottom:0;">
+        <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>New rep notes</span>
+          <span id="dash-rep-notes-count" style="font-size:12px;color:#aaa;font-weight:400;"></span>
+        </div>
+        <div id="dash-rep-notes-list" style="max-height:300px;overflow-y:auto;"></div>
+      </div>
+    </div>
   </div>
 
   <!-- INTAKE -->
@@ -1701,7 +1710,7 @@
 
 <script>
 const VERSION = '1.18.0';
-const BUILD_STAMP = '2026-05-23 08:11:08 PM EST';
+const BUILD_STAMP = '2026-05-23 08:29:47 PM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1904,6 +1913,7 @@ async function loadProjects() {
       execution_lifecycle: p.execution_lifecycle || null,
       execution_status: p.execution_status || null,
       execution_owners: p.execution_owners || [],
+      notes_last_seen_at: p.notes_last_seen_at || null,
     }));
   }
 }
@@ -2495,6 +2505,13 @@ async function loadProjectNotes(projectId) {
     .order('created_at', { ascending: false });
   if (error) { console.warn('[Arbiter] loadProjectNotes error:', error.message); return []; }
   projectNotesCache.set(projectId, data || []);
+  // Mark notes as seen (update the project's notes_last_seen_at timestamp)
+  _sb.from('projects').update({ notes_last_seen_at: new Date().toISOString() }).eq('id', projectId)
+    .then(() => {
+      // Update in-memory project too
+      const p = projects.find(x => x.id === projectId);
+      if (p) p.notes_last_seen_at = new Date().toISOString();
+    });
   return data || [];
 }
 
@@ -6213,6 +6230,76 @@ function renderDashboard() {
         </div>`;
       }).join('');
     }
+  }
+
+  // --- New rep notes ---
+  renderRepNotesWidget();
+}
+
+async function renderRepNotesWidget() {
+  const listEl = document.getElementById('dash-rep-notes-list');
+  const countEl = document.getElementById('dash-rep-notes-count');
+  if (!listEl) return;
+
+  // Fetch all rep notes for this workspace in one query
+  if (!currentWorkspaceId || !_sb) {
+    listEl.innerHTML = '<p style="font-size:13px;color:#aaa;font-style:italic;padding:8px 0;">No new rep notes.</p>';
+    return;
+  }
+
+  try {
+    const { data: repNotes, error } = await _sb.from('project_notes')
+      .select('project_id, author_name, body, created_at')
+      .eq('workspace_id', currentWorkspaceId)
+      .eq('author_role', 'rep')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    // Match against projects to find unread ones
+    const unread = [];
+    (repNotes || []).forEach(note => {
+      const p = projects.find(x => x.id === note.project_id);
+      if (!p) return;
+      const lastSeen = p.notes_last_seen_at ? new Date(p.notes_last_seen_at) : null;
+      const noteTime = new Date(note.created_at);
+      if (!lastSeen || noteTime > lastSeen) {
+        // Only add each project once (most recent note)
+        if (!unread.find(u => u.project.id === p.id)) {
+          unread.push({ project: p, note });
+        }
+      }
+    });
+
+    if (countEl) countEl.textContent = unread.length ? unread.length + ' project' + (unread.length > 1 ? 's' : '') : '';
+
+    if (!unread.length) {
+      listEl.innerHTML = '<p style="font-size:13px;color:#aaa;font-style:italic;padding:8px 0;">No new rep notes.</p>';
+      return;
+    }
+
+    listEl.innerHTML = unread.map(({ project: p, note }) => {
+      const noteDate = new Date(note.created_at);
+      const timeStr = noteDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      let authorLabel = note.author_name || 'Rep';
+      if (authorLabel.includes('@')) {
+        authorLabel = authorLabel.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      }
+      const preview = note.body.length > 60 ? note.body.substring(0, 60) + '…' : note.body;
+      const tab = p.status === 'Accepted' ? 'active-projects' : 'tracker';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f3;cursor:pointer;" onclick="showTab('${tab}')">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.name||'Untitled')}</div>
+          <div style="font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span style="color:#2E7D32;font-weight:500;">${escapeHtml(authorLabel)}</span>: ${escapeHtml(preview)}</div>
+        </div>
+        <div style="font-size:11px;color:#aaa;">${timeStr}</div>
+        <div style="color:#ccc;font-size:14px;">›</div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    console.warn('[Arbiter] renderRepNotesWidget error:', err);
+    listEl.innerHTML = '<p style="font-size:13px;color:#aaa;font-style:italic;padding:8px 0;">No new rep notes.</p>';
   }
 }
 
