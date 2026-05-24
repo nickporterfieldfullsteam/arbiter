@@ -54,29 +54,21 @@ test.describe('Dashboard (v1.17.0)', () => {
     const metrics = authedPage.locator('#dash-metrics');
     await expect(metrics).toBeVisible();
 
-    // Active projects = 4 (all Accepted)
-    const activeCard = metrics.locator('.metric-card', { hasText: 'Active projects' });
+    // Total projects = 6
+    const totalCard = metrics.locator('.metric-card', { hasText: 'Total projects' });
+    await expect(totalCard).toContainText('6');
+
+    // Active = 4 (all Accepted)
+    const activeCard = metrics.locator('.metric-card', { hasText: 'Active' });
     await expect(activeCard).toContainText('4');
 
     // Unreviewed = 1
     const unreviewedCard = metrics.locator('.metric-card', { hasText: 'Unreviewed' });
     await expect(unreviewedCard).toContainText('1');
 
-    // At risk = 1
-    const atRiskCard = metrics.locator('.metric-card', { hasText: 'At risk' });
-    await expect(atRiskCard).toContainText('1');
-
-    // Blocked = 1
-    const blockedCard = metrics.locator('.metric-card', { hasText: 'Blocked' });
-    await expect(blockedCard).toContainText('1');
-
     // Overdue ETAs = 1
     const overdueCard = metrics.locator('.metric-card', { hasText: 'Overdue ETAs' });
     await expect(overdueCard).toContainText('1');
-
-    // Revisits = 1
-    const revisitCard = metrics.locator('.metric-card', { hasText: 'Revisits' });
-    await expect(revisitCard).toContainText('1');
   });
 
   test('Needs attention widget shows blocked and at-risk projects', async ({ authedPage }) => {

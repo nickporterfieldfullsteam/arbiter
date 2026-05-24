@@ -429,7 +429,25 @@
 
   <!-- DASHBOARD -->
   <div id="tab-dashboard" class="tab-panel">
+    <!-- Greeting -->
+    <div id="dash-greeting" style="margin-bottom:1.25rem;"></div>
+
+    <!-- Quick stats -->
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.25rem;" id="dash-metrics"></div>
+
+    <!-- Pipeline summary -->
+    <div class="section" style="margin-bottom:16px;">
+      <div class="section-title">Pipeline</div>
+      <div id="dash-pipeline"></div>
+    </div>
+
+    <!-- Lifecycle distribution (Accepted projects by stage) -->
+    <div class="section" style="margin-bottom:16px;">
+      <div class="section-title">Execution lifecycle</div>
+      <div id="dash-lifecycle"></div>
+    </div>
+
+    <!-- Action widgets: 2x2 grid -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="dash-grid">
       <div class="section" style="margin-bottom:0;">
         <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
@@ -462,13 +480,40 @@
         <div id="dash-revisit-list" style="max-height:300px;overflow-y:auto;"></div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px;">
+
+    <!-- New rep notes + Recently updated: side by side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
       <div class="section" style="margin-bottom:0;">
         <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
           <span>New rep notes</span>
           <span id="dash-rep-notes-count" style="font-size:12px;color:#aaa;font-weight:400;"></span>
         </div>
         <div id="dash-rep-notes-list" style="max-height:300px;overflow-y:auto;"></div>
+      </div>
+      <div class="section" style="margin-bottom:0;">
+        <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Recently updated</span>
+          <span id="dash-recent-count" style="font-size:12px;color:#aaa;font-weight:400;"></span>
+        </div>
+        <div id="dash-recent-list" style="max-height:300px;overflow-y:auto;"></div>
+      </div>
+    </div>
+
+    <!-- Aging submissions + Unowned projects -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+      <div class="section" style="margin-bottom:0;">
+        <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Aging submissions</span>
+          <span id="dash-aging-count" style="font-size:12px;color:#aaa;font-weight:400;"></span>
+        </div>
+        <div id="dash-aging-list" style="max-height:300px;overflow-y:auto;"></div>
+      </div>
+      <div class="section" style="margin-bottom:0;">
+        <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span>Projects without owners</span>
+          <span id="dash-unowned-count" style="font-size:12px;color:#aaa;font-weight:400;"></span>
+        </div>
+        <div id="dash-unowned-list" style="max-height:300px;overflow-y:auto;"></div>
       </div>
     </div>
   </div>
@@ -1710,7 +1755,7 @@
 
 <script>
 const VERSION = '1.18.1';
-const BUILD_STAMP = '2026-05-24 10:34:00 AM EST';
+const BUILD_STAMP = '2026-05-24 10:59:47 AM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -6123,7 +6168,21 @@ function renderDashboard() {
   const active = (projects || []).filter(p => p.status === 'Accepted' && !p.deleted_at);
   const allLive = (projects || []).filter(p => !p.deleted_at);
 
-  // --- Metrics ---
+  // --- Greeting ---
+  const greetEl = document.getElementById('dash-greeting');
+  if (greetEl) {
+    const hour = now.getHours();
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    const userName = currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || '';
+    const nameStr = userName ? `, ${escapeHtml(userName)}` : '';
+    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    greetEl.innerHTML = `
+      <div style="font-size:20px;font-weight:600;color:#1a1a1a;">${greeting}${nameStr}</div>
+      <div style="font-size:13px;color:#aaa;margin-top:2px;">${dateStr}</div>
+    `;
+  }
+
+  // --- Quick stats ---
   const totalActive = active.length;
   const unreviewed = allLive.filter(p => p.status === 'Submitted');
   const atRisk = active.filter(p => p.execution_status === 'At Risk');
@@ -6138,16 +6197,98 @@ function renderDashboard() {
     return rd >= today && rd <= in14;
   });
 
+  // Acceptance rate
+  const decided = allLive.filter(p => ['Accepted','Passed'].includes(p.status));
+  const acceptanceRate = decided.length ? Math.round((allLive.filter(p => p.status === 'Accepted').length / decided.length) * 100) : 0;
+  // Average score
+  const scored = allLive.filter(p => typeof p.score === 'number' && p.score > 0);
+  const avgScore = scored.length ? Math.round(scored.reduce((s, p) => s + p.score, 0) / scored.length) : 0;
+
   const metricsEl = document.getElementById('dash-metrics');
   if (metricsEl) {
     metricsEl.innerHTML = [
-      dashMetric('Active projects', totalActive, '#1a1a1a'),
+      dashMetric('Total projects', allLive.length, '#1a1a1a'),
+      dashMetric('Active', totalActive, '#1a1a1a'),
       dashMetric('Unreviewed', unreviewed.length, unreviewed.length > 0 ? '#185FA5' : '#aaa'),
-      dashMetric('At risk', atRisk.length, atRisk.length > 0 ? '#854F0B' : '#aaa'),
-      dashMetric('Blocked', blocked.length, blocked.length > 0 ? '#A32D2D' : '#aaa'),
+      dashMetric('Acceptance rate', acceptanceRate + '%', acceptanceRate > 0 ? '#0F6E56' : '#aaa'),
+      dashMetric('Avg score', avgScore, avgScore > 0 ? '#1a1a1a' : '#aaa'),
       dashMetric('Overdue ETAs', overdue.length, overdue.length > 0 ? '#A32D2D' : '#aaa'),
-      dashMetric('Revisits (14d)', upcoming.length, upcoming.length > 0 ? '#534AB7' : '#aaa'),
     ].join('');
+  }
+
+  // --- Pipeline summary (horizontal stacked bar) ---
+  const pipelineEl = document.getElementById('dash-pipeline');
+  if (pipelineEl) {
+    const statuses = ['Submitted', 'Under Review', 'Accepted', 'Deferred', 'Passed'];
+    const statusColors = {
+      'Submitted': '#E6F1FB',
+      'Under Review': '#FAEEDA',
+      'Accepted': '#E1F5EE',
+      'Deferred': '#F1EFE8',
+      'Passed': '#FCEBEB',
+    };
+    const statusTextColors = {
+      'Submitted': '#185FA5',
+      'Under Review': '#854F0B',
+      'Accepted': '#0F6E56',
+      'Deferred': '#5F5E5A',
+      'Passed': '#A32D2D',
+    };
+    const total = allLive.length || 1;
+    const counts = {};
+    statuses.forEach(s => { counts[s] = allLive.filter(p => p.status === s).length; });
+
+    const barSegments = statuses.map(s => {
+      const pct = (counts[s] / total) * 100;
+      if (pct === 0) return '';
+      return `<div style="flex:${counts[s]};background:${statusColors[s]};height:28px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:${statusTextColors[s]};white-space:nowrap;min-width:${pct > 5 ? '0' : '30px'};" title="${s}: ${counts[s]}">${pct >= 8 ? counts[s] : ''}</div>`;
+    }).join('');
+
+    const legend = statuses.map(s => {
+      if (!counts[s]) return '';
+      return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#666;">
+        <span style="width:8px;height:8px;border-radius:2px;background:${statusColors[s]};border:1px solid ${statusTextColors[s]}30;"></span>
+        ${s} <strong>${counts[s]}</strong>
+      </span>`;
+    }).join('');
+
+    pipelineEl.innerHTML = `
+      <div style="display:flex;border-radius:6px;overflow:hidden;border:1px solid #e5e5e5;margin-bottom:8px;">${barSegments}</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">${legend}</div>
+    `;
+  }
+
+  // --- Lifecycle distribution (Accepted projects by stage) ---
+  const lifecycleEl = document.getElementById('dash-lifecycle');
+  if (lifecycleEl) {
+    const stages = ['Planning', 'Development', 'Testing', 'Releasing'];
+    const stageCounts = {};
+    stages.forEach(s => { stageCounts[s] = active.filter(p => p.execution_lifecycle === s).length; });
+    const unassigned = active.filter(p => !p.execution_lifecycle).length;
+    const maxCount = Math.max(...Object.values(stageCounts), unassigned, 1);
+
+    const bars = stages.map(s => {
+      const pct = (stageCounts[s] / maxCount) * 100;
+      return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <div style="width:90px;font-size:12px;color:#666;text-align:right;flex-shrink:0;">${s}</div>
+        <div style="flex:1;background:#f0f0ee;border-radius:4px;height:22px;overflow:hidden;">
+          <div style="width:${pct}%;background:#232337;height:100%;border-radius:4px;min-width:${stageCounts[s] > 0 ? '2px' : '0'};transition:width 0.3s;"></div>
+        </div>
+        <div style="width:24px;font-size:12px;color:#888;text-align:right;">${stageCounts[s]}</div>
+      </div>`;
+    }).join('');
+
+    const unassignedBar = unassigned > 0 ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <div style="width:90px;font-size:12px;color:#aaa;text-align:right;flex-shrink:0;font-style:italic;">Unassigned</div>
+      <div style="flex:1;background:#f0f0ee;border-radius:4px;height:22px;overflow:hidden;">
+        <div style="width:${(unassigned / maxCount) * 100}%;background:#ccc;height:100%;border-radius:4px;min-width:2px;"></div>
+      </div>
+      <div style="width:24px;font-size:12px;color:#aaa;text-align:right;">${unassigned}</div>
+    </div>` : '';
+
+    lifecycleEl.innerHTML = active.length === 0
+      ? '<p style="font-size:13px;color:#aaa;font-style:italic;padding:4px 0;">No active projects yet.</p>'
+      : bars + unassignedBar;
   }
 
   // --- Needs attention (at risk + blocked) ---
@@ -6237,6 +6378,81 @@ function renderDashboard() {
           <div style="color:#ccc;font-size:14px;">›</div>
         </div>`;
       }).join('');
+    }
+  }
+
+  // --- Recently updated (last 7 days) ---
+  const recentEl = document.getElementById('dash-recent-list');
+  const recentCount = document.getElementById('dash-recent-count');
+  if (recentEl) {
+    const sevenDaysAgo = new Date(today.getTime() - 7 * 86400000);
+    const recent = allLive.filter(p => {
+      const upd = p.updated_at ? new Date(p.updated_at) : null;
+      return upd && upd >= sevenDaysAgo;
+    }).sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).slice(0, 10);
+    if (recentCount) recentCount.textContent = recent.length ? recent.length + ' project' + (recent.length > 1 ? 's' : '') : '';
+    if (!recent.length) {
+      recentEl.innerHTML = '<p style="font-size:13px;color:#aaa;font-style:italic;padding:8px 0;">No updates in the last 7 days.</p>';
+    } else {
+      recentEl.innerHTML = recent.map(p => {
+        const upd = new Date(p.updated_at);
+        const updLabel = upd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const tab = p.status === 'Accepted' ? 'active-projects' : 'tracker';
+        return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f3;cursor:pointer;" onclick="showTab('${tab}')">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:500;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.name||'Untitled')}</div>
+            <div style="font-size:11px;color:#aaa;">${escapeHtml(p.status)}</div>
+          </div>
+          <div style="font-size:11px;color:#888;">${updLabel}</div>
+          <div style="color:#ccc;font-size:14px;">›</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // --- Aging submissions (Submitted for 5+ days) ---
+  const agingEl = document.getElementById('dash-aging-list');
+  const agingCount = document.getElementById('dash-aging-count');
+  if (agingEl) {
+    const aging = unreviewed.filter(p => {
+      if (!p.created_at) return false;
+      const age = Math.floor((now.getTime() - new Date(p.created_at).getTime()) / 86400000);
+      return age >= 5;
+    }).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    if (agingCount) agingCount.textContent = aging.length ? aging.length + ' submission' + (aging.length > 1 ? 's' : '') : '';
+    if (!aging.length) {
+      agingEl.innerHTML = '<p style="font-size:13px;color:#aaa;font-style:italic;padding:8px 0;">No stale submissions.</p>';
+    } else {
+      agingEl.innerHTML = aging.map(p => {
+        const age = Math.floor((now.getTime() - new Date(p.created_at).getTime()) / 86400000);
+        const customer = (p.lockedVals && p.lockedVals['__customer__']) || '';
+        return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f3;cursor:pointer;" onclick="showTab('tracker')">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:500;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.name||'Untitled')}</div>
+            <div style="font-size:11px;color:#aaa;">${escapeHtml(customer)}</div>
+          </div>
+          <div style="font-size:11px;color:#A32D2D;font-weight:500;">${age} days</div>
+          <div style="color:#ccc;font-size:14px;">›</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // --- Projects without owners ---
+  const unownedEl = document.getElementById('dash-unowned-list');
+  const unownedCount = document.getElementById('dash-unowned-count');
+  if (unownedEl) {
+    const unowned = active.filter(p => !p.execution_owners || p.execution_owners.length === 0);
+    if (unownedCount) unownedCount.textContent = unowned.length ? unowned.length + ' project' + (unowned.length > 1 ? 's' : '') : '';
+    if (!unowned.length) {
+      unownedEl.innerHTML = '<p style="font-size:13px;color:#aaa;font-style:italic;padding:8px 0;">All active projects have owners.</p>';
+    } else {
+      unownedEl.innerHTML = unowned.map(p => dashRow(p, {
+        pill: p.execution_lifecycle,
+        pillCol: 'execution_lifecycle_stages',
+        sub: p.execution_status || '',
+        action: `showTab('active-projects')`,
+      })).join('');
     }
   }
 
