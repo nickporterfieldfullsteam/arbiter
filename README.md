@@ -6,7 +6,7 @@ Reps submit through a portal; admins and PMs review, score, decide, and notify b
 Live admin app: <https://nickporterfieldfullsteam.github.io/arbiter/>
 Live rep portal: <https://nickporterfieldfullsteam.github.io/arbiter/portal/>
 
-Currently: main app v1.18.0, portal v0.6.1.
+Currently: main app v1.18.1, portal v0.6.2.
 
 ---
 
@@ -14,6 +14,16 @@ Currently: main app v1.18.0, portal v0.6.1.
 
 A short orienting note for future readers; full history in `git log`.
 
+* **v1.18.1 — Header redesign, rep notes in portal, dashboard widget.**
+  Compact header with underline nav tabs (Option C), fixed full-width at
+  top matching the footer pattern. Portal detail panel now has a live notes
+  log where reps can read PM notes and add their own (`author_role='rep'`,
+  RLS already in place). Notes show role-based border colors: blue for PM,
+  green for rep. Dashboard gains a "New rep notes" widget showing projects
+  with unread rep notes (tracked via `notes_last_seen_at` column on
+  `projects`). `loadProjectNotes` marks notes as read on view. Portal
+  `loadRepName` eagerly fetches the rep's display name from the `reps`
+  table during init. 101 Playwright tests.
 * **v1.18.0 — Project notes + status board upgrade.** Replaced the single
   `decision_notes` textarea with a threaded `project_notes` table. Each note
   is an instant-save INSERT (Enter to submit, Shift+Enter for new lines).
@@ -132,7 +142,7 @@ arbiter/
 │           └── index.ts    new_submission, project_updated, member_invited.
 ├── tests/
 │   └── tests/
-│       ├── e2e/            Playwright tests, 98 currently.
+│       ├── e2e/            Playwright tests, 101 currently.
 │       └── helpers/        Auth + Supabase fixtures shared across tests.
 ├── .github/
 │   └── workflows/
@@ -299,7 +309,7 @@ Playwright tests in `tests/tests/e2e/`. Run with:
 arbiter-test     # alias for: cd tests && npm test
 ```
 
-Currently 98 tests, all green. They run against the **real Supabase** (the test
+Currently 101 tests, all green. They run against the **real Supabase** (the test
 workspace, fixture-isolated from prod) for behavior tests, and use mocked fetch
 intercepts for UI/contract tests.
 
