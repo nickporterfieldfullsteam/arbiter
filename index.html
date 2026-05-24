@@ -1710,7 +1710,7 @@
 
 <script>
 const VERSION = '1.18.1';
-const BUILD_STAMP = '2026-05-23 08:32:46 PM EST';
+const BUILD_STAMP = '2026-05-23 08:53:34 PM EST';
 const SUPABASE_URL = 'https://evjvdfqpsbnpfsmzhpfn.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_8qsrZAPt5oesXlSNBTJjpA_YjY8OqTk';
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -7092,6 +7092,89 @@ async function init() {
   } catch(e) {
     console.error('[Arbiter] Init render error:', e);
   }
+  // Start realtime subscriptions
+  startRealtimeSubscriptions();
+}
+
+/* ── REALTIME SUBSCRIPTIONS ── */
+let _realtimeChannel = null;
+
+function startRealtimeSubscriptions() {
+  if (!currentWorkspaceId || !_sb) return;
+  // Clean up any existing subscription
+  stopRealtimeSubscriptions();
+
+  _realtimeChannel = _sb.channel('arbiter-realtime')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'projects',
+      filter: 'workspace_id=eq.' + currentWorkspaceId,
+    }, () => {
+      console.log('[Arbiter] Realtime: projects changed');
+      handleRealtimeRefresh();
+    })
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'project_notes',
+      filter: 'workspace_id=eq.' + currentWorkspaceId,
+    }, (payload) => {
+      console.log('[Arbiter] Realtime: new note');
+      handleRealtimeNoteInsert(payload.new);
+    })
+    .subscribe((status) => {
+      console.log('[Arbiter] Realtime subscription:', status);
+    });
+}
+
+function stopRealtimeSubscriptions() {
+  if (_realtimeChannel) {
+    _sb.removeChannel(_realtimeChannel);
+    _realtimeChannel = null;
+  }
+}
+
+let _refreshDebounce = null;
+function handleRealtimeRefresh() {
+  // Debounce rapid changes (e.g. bulk updates, self-triggered saves)
+  if (_refreshDebounce) clearTimeout(_refreshDebounce);
+  _refreshDebounce = setTimeout(async () => {
+    await loadProjects();
+    // Re-render whatever tab is currently active
+    const activePanel = document.querySelector('.tab-panel.active');
+    if (!activePanel) return;
+    const id = activePanel.id;
+    if (id === 'tab-dashboard') renderDashboard();
+    else if (id === 'tab-tracker') renderTracker();
+    else if (id === 'tab-active-projects') renderActiveProjects();
+    else if (id === 'tab-insights') { populateInsightsFilters(); renderInsights(); }
+    else if (id === 'tab-submitters') renderSubmitters();
+    renderSummaryMetrics();
+  }, 1500);
+}
+
+function handleRealtimeNoteInsert(note) {
+  if (!note) return;
+  // Skip if this note was added by the current user — addProjectNote already rendered it
+  if (note.author_email && currentUser?.email
+      && note.author_email.toLowerCase() === currentUser.email.toLowerCase()) return;
+  // Refresh the notes log if the project's panel is currently open
+  const inlineContainer = document.getElementById('notes-log-inline-' + note.project_id);
+  const modalContainer = document.getElementById('notes-log-modal-' + note.project_id);
+  const execContainer = document.querySelector(`[data-notes-log="${note.project_id}"]`);
+  if (inlineContainer || modalContainer || execContainer) {
+    loadProjectNotes(note.project_id).then(() => {
+      if (inlineContainer) renderNotesLog(note.project_id, inlineContainer.id);
+      if (modalContainer) renderNotesLog(note.project_id, modalContainer.id);
+      if (execContainer) renderNotesLog(note.project_id, execContainer.id);
+    });
+  }
+  // Refresh dashboard rep notes widget if on dashboard
+  const activePanel = document.querySelector('.tab-panel.active');
+  if (activePanel?.id === 'tab-dashboard' && note.author_role === 'rep') {
+    renderRepNotesWidget();
+  }
 }
 
 
@@ -7193,6 +7276,8 @@ async function sendMagicLink() {
 
 async function signOut() {
   console.log('[Arbiter] Sign out clicked');
+  // Clean up realtime subscriptions
+  stopRealtimeSubscriptions();
   // Clear local state and show gate FIRST so the UI always responds
   _signedInHandled = false;
   _initInFlight = false;
